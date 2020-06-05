@@ -1,0 +1,16 @@
+[package]
+name = "rpi_python"
+version = "0.1.0"
+authors = ["ubuntu"]
+edition = "2018"
+
+[lib]
+name = "raspberry_pi_lib"
+crate-type = ["cdylib"]
+
+[dependencies]
+rppal = "0.11.3"
+
+[dependencies.cpython]
+version = "0.5"
+features = ["extension-module"]
