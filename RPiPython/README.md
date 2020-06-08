@@ -14,7 +14,7 @@ You can test the following code:
 
 `python3 demo.py`
 
-```
+```python
 import rpipy
 
 print("Device info:", rpipy.get_device_info(), "| temp:", rpipy.measure_temp())
