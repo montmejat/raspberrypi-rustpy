@@ -8,12 +8,17 @@ def measure_temp():
     temp = os.popen("vcgencmd measure_temp").readline()
     return (temp.replace("temp=","").replace("\n", ""))
 
-def turn_on_onboard_led(time):
-    ret = raspberrypylib.turn_on_onboard_led(time)
-    if ret != 0:
-        print("Error turning onboard led...")
+# def turn_on_onboard_led(time):
+#     ret = raspberrypylib.turn_on_onboard_led(time)
+#     if ret != 0:
+#         print("Error turning onboard led...")
 
 def turn_on_led(led_pin, time):
     ret = raspberrypylib.turn_on_led(led_pin, time)
+    if ret != 0:
+        print("Error turning onboard led...")
+
+def blink_led(led_pin, time):
+    ret = raspberrypylib.blink_led(led_pin, time)
     if ret != 0:
         print("Error turning onboard led...")

@@ -3,6 +3,8 @@ extern crate cpython;
 
 use std::thread;
 use std::time::Duration;
+// use std::io::{self, BufRead};
+// use std::sync::mpsc::{self, TryRecvError};
 
 use cpython::{Python, PyResult};
 use rppal::system::DeviceInfo;
@@ -43,10 +45,34 @@ fn turn_on_led(_py: Python, led_pin: u8, millis: u64) -> PyResult<u8> {
     Ok(0)
 }
 
+fn blink_led(_py: Python, led_pin: u8, millis: u64) -> PyResult<u8> {
+    let gpio = match Gpio::new() {
+        Result::Ok(gpio) => gpio,
+        Result::Err(_err) => return Ok(1),
+    };
+
+    let mut pin = match gpio.get(led_pin) {
+        Result::Ok(led) => led.into_output(),
+        Result::Err(_err) => return Ok(2),
+    };
+
+    thread::spawn(move || {
+        loop {
+            pin.set_high();
+            thread::sleep(Duration::from_millis(millis));
+            pin.set_low();
+            thread::sleep(Duration::from_millis(millis));
+        }
+    });
+
+    Ok(0)
+}
+
 py_module_initializer!(raspberrypylib, |py, m| {
     m.add(py, "__doc__", "This module is implemented in Rust.")?;
     m.add(py, "get_device_info", py_fn!(py, get_device_info()))?;
     m.add(py, "turn_on_onboard_led", py_fn!(py, turn_on_onboard_led(millis: u64)))?;
     m.add(py, "turn_on_led", py_fn!(py, turn_on_led(led_pin: u8, millis: u64)))?;
+    m.add(py, "blink_led", py_fn!(py, blink_led(led_pin: u8, millis: u64)))?;
     Ok(())
 });
