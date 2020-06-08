@@ -5,8 +5,10 @@
 `cd Lib/`
 
 ```[python]
->>> import rpipy
->>> rpipy.measure_temp()
-"46.2'C"
->>> rpipy.blink_led(26, 500) # blink led on GPIO 26 every 500 ms
+import rpipy
+
+print("Device info:", rpipy.get_device_info(), "| temp:", rpipy.measure_temp())
+rpipy.blink_led(26, 500)
+
+wait = input("Press any key to end program") # blink led on GPIO 26 every 500 ms
 ```

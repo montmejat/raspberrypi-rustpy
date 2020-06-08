@@ -2,7 +2,7 @@ import os
 import raspberrypylib
 
 def get_device_info():
-    print(raspberrypylib.get_device_info())
+    return raspberrypylib.get_device_info()
 
 def measure_temp():
     temp = os.popen("vcgencmd measure_temp").readline()
