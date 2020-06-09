@@ -22,17 +22,17 @@ fn get_device_info(_py: Python) -> PyResult<String> {
 }
 
 fn turn_on_onboard_led(py: Python, millis: u64) -> PyResult<u8> {
-    turn_on_led(py, GPIO_ONBOARD_LED, millis)?;
+    blink_led(py, GPIO_ONBOARD_LED, millis)?;
     Ok(0)
 }
 
-fn turn_on_led(_py: Python, led_pin: u8, millis: u64) -> PyResult<u8> {
+fn set_high(_py: Python, pin: u8, millis: u64) -> PyResult<u8> {
     let gpio = match Gpio::new() {
         Result::Ok(gpio) => gpio,
         Result::Err(_err) => return Ok(1),
     };
 
-    let mut pin = match gpio.get(led_pin) {
+    let mut pin = match gpio.get(pin) {
         Result::Ok(led) => led.into_output(),
         Result::Err(_err) => return Ok(2),
     };
@@ -45,13 +45,13 @@ fn turn_on_led(_py: Python, led_pin: u8, millis: u64) -> PyResult<u8> {
     Ok(0)
 }
 
-fn blink_led(_py: Python, led_pin: u8, millis: u64) -> PyResult<u8> {
+fn blink_led(_py: Python, pin: u8, millis: u64) -> PyResult<u8> {
     let gpio = match Gpio::new() {
         Result::Ok(gpio) => gpio,
         Result::Err(_err) => return Ok(1),
     };
 
-    let mut pin = match gpio.get(led_pin) {
+    let mut pin = match gpio.get(pin) {
         Result::Ok(led) => led.into_output(),
         Result::Err(_err) => return Ok(2),
     };
@@ -68,11 +68,36 @@ fn blink_led(_py: Python, led_pin: u8, millis: u64) -> PyResult<u8> {
     Ok(0)
 }
 
+fn send_pwm(_py: Python, pin: u8, period: u64, pulse_width: u64) -> PyResult<u8> {
+    let gpio = match Gpio::new() {
+        Result::Ok(gpio) => gpio,
+        Result::Err(_err) => return Ok(1),
+    };
+
+    let mut pin = match gpio.get(pin) {
+        Result::Ok(led) => led.into_output(),
+        Result::Err(_err) => return Ok(2),
+    };
+
+    match pin.set_pwm(Duration::from_millis(period), Duration::from_millis(pulse_width)) {
+        Result::Ok(_) => {},
+        Result::Err(err) => {
+            println!("{}", err);
+            return Ok(3)
+        },
+    };
+
+    thread::sleep(Duration::from_millis(5000));
+
+    Ok(0)
+}
+
 py_module_initializer!(raspberrypylib, |py, m| {
     m.add(py, "__doc__", "This module is implemented in Rust.")?;
     m.add(py, "get_device_info", py_fn!(py, get_device_info()))?;
     m.add(py, "turn_on_onboard_led", py_fn!(py, turn_on_onboard_led(millis: u64)))?;
-    m.add(py, "turn_on_led", py_fn!(py, turn_on_led(led_pin: u8, millis: u64)))?;
-    m.add(py, "blink_led", py_fn!(py, blink_led(led_pin: u8, millis: u64)))?;
+    m.add(py, "set_high", py_fn!(py, set_high(pin: u8, millis: u64)))?;
+    m.add(py, "blink_led", py_fn!(py, blink_led(pin: u8, millis: u64)))?;
+    m.add(py, "send_pwm", py_fn!(py, send_pwm(pin: u8, period: u64, pulse_width: u64)))?;
     Ok(())
 });
