@@ -33,8 +33,11 @@ def start_server():
 
 
 def app_loop(server_socket):
+    pause = False
+
     while True:
-        demo.loop()
+        if not pause:
+            demo.loop()
 
         server_socket.listen()
 
@@ -42,17 +45,31 @@ def app_loop(server_socket):
             conn, addr = server_socket.accept()
         except socket.timeout:
             conn = None
-            print("no one")
 
         if conn != None:
-            print('Connected by', addr)
+            print(' - Connected by', addr)
             conn.sendall("listening".encode())
 
             try:
                 data = conn.recv(1024)
-                print("received:", data)
+                data = data.decode("utf-8")
+
+                if data == "pause":
+                    pause = True
+                    print("   * CLIENT : Paused server *")
+                elif data == "unpause":
+                    pause = False
+                    print("   * CLIENT : Loop back up again *")
+                elif data == "restart":
+                    pause = False
+                    print("   * CLIENT : Restart *")
+                    demo.start()
+                elif "custom:" in data:
+                    function_name = data.replace('custom:', '')
+                    print("   * CLIENT : Calling", function_name)
+                    getattr(demo, function_name)()
             except socket.timeout:
-                print("no message yet")
+                pass
 
 
 if __name__ == "__main__":
