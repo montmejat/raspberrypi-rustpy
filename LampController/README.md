@@ -24,6 +24,9 @@ def loop():
 
 def end():
     print("Ending demo!")
+
+def my_func():
+    print("Some custom stuff!")
 ```
 
 ## Communication with the server
