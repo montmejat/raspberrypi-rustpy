@@ -5,19 +5,21 @@ import signal
 import sys
 import threading
 
-
 HOST = '127.0.0.1'
 PORT = 10000
-
 
 def signal_handler(sig, frame):
     print(' ** Closing Lamp Control ** ')
     sys.exit(0)
 
 
-def start():
+def start_server():
     print(" ** Lamp Control Started ** ")
     signal.signal(signal.SIGINT, signal_handler)
+
+    socket.setdefaulttimeout(2)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((HOST, PORT))
 
     try:
         demo.start()
@@ -26,32 +28,33 @@ def start():
 
     if not "loop" in dir(demo):
         print("Error, demo.py needs a 'loop' function.")
+    
+    return server_socket
 
 
-def app_loop():
+def app_loop(server_socket):
     while True:
         demo.loop()
 
+        server_socket.listen()
 
-def app():
-    thread = threading.Thread(target=app_loop())
-    thread.start()
+        try:
+            conn, addr = server_socket.accept()
+        except socket.timeout:
+            conn = None
+            print("no one")
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('', PORT))
-        s.listen()
+        if conn != None:
+            print('Connected by', addr)
+            conn.sendall("listening".encode())
 
-        while True:
-            conn, addr = s.accept()
-
-            with conn:
-                print('Connected by', addr)
-                while True:
-                    data = conn.recv(1024)
-                    if not data:
-                        break
-                    conn.sendall(data)
+            try:
+                data = conn.recv(1024)
+                print("received:", data)
+            except socket.timeout:
+                print("no message yet")
 
 
-start()
-app()
+if __name__ == "__main__":
+    server_socket = start_server()
+    app_loop(server_socket)

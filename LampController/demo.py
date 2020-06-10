@@ -13,3 +13,7 @@ def loop():
     sleep(1)
     led.off()
     sleep(1)
+    print("Ending loop in demo!")
+
+def end():
+    print("Ending demo!")
