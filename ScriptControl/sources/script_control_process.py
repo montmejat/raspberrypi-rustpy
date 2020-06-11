@@ -47,7 +47,7 @@ def app_loop(server_socket):
             conn = None
 
         if conn != None:
-            print(' - Connected by', addr)
+            print(" - Connected by", addr)
             conn.sendall("listening".encode())
 
             try:
@@ -64,10 +64,18 @@ def app_loop(server_socket):
                     pause = False
                     print("   * CLIENT : Restart *")
                     demo.start()
-                elif "custom:" in data:
-                    function_name = data.replace('custom:', '')
+                elif "func:" in data:
+                    function_name = data.replace("func:", "")
                     print("   * CLIENT : Calling", function_name)
                     getattr(demo, function_name)()
+                elif "var:" in data:
+                    var_and_value = data.replace("var:", "")
+                    var_name, value = var_and_value.split("=")
+                    print("   * CLIENT : Modifying", var_name, "to", value)
+                    var_type = type(getattr(demo, var_name))
+                    value = var_type(value)
+                    setattr(demo, var_name, value)
+
             except socket.timeout:
                 pass
 

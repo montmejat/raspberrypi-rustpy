@@ -10,12 +10,13 @@ from time import sleep
 import rpipy
 
 led = LED(26)
+my_var = 50
 
 def start():
     print("Device info:", rpipy.get_device_info(), "| temp:", rpipy.measure_temp())
 
 def loop():
-    print("Looping in demo!")
+    print("Looping in demo! My var =", my_var)
     led.on()
     sleep(1)
     led.off()
@@ -38,4 +39,5 @@ Commands you can send:
 - `pause`: pause the execution of `loop()`.
 - `unpause`: unpause the execution of `loop()`.
 - `restart`: restart server and execute `start()` again.
-- `custom:my_func`: launch custom function defined in `demo.py`.
+- `func:my_func`: launch custom function defined in `demo.py`.
+- `var:my_var=value`: change a variable to the given value.
