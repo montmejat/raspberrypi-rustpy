@@ -39,5 +39,7 @@ Commands you can send:
 - `pause`: pause the execution of `loop()`.
 - `unpause`: unpause the execution of `loop()`.
 - `restart`: execute `start()` again.
+- `save`: saves all the variables from `demo.py`.
+- `load`: loads all the variables from `demo.py`.
 - `func:my_func`: launch custom function defined in `demo.py`.
 - `var:my_var=value`: change a variable to the given value.

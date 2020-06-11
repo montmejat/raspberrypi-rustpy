@@ -20,21 +20,33 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-def save_variables():
-    filename = 'demo_vars'
+def save_variables(filename='demo_vars.pkl'):
     outfile = open(filename, 'wb')
     variable_names = [variable for variable in dir(demo) if not variable.startswith('__')]
+    variables = {}
 
     for variable in variable_names:
-        if not callable(getattr(demo, variable)) and not isinstance(getattr(demo, variable), ModuleType):
+        if not callable(getattr(demo, variable)) and not isinstance(getattr(demo, variable), ModuleType) and variable != 'led':
             try:
                 copy = getattr(demo, variable)
                 print("      Copying:", copy)
-                dill.dump(copy, outfile)
+                variables[variable] = copy
             except TypeError:
                 print("      Can't dill:", copy)
-    
+
+    dill.dump(variables, outfile)
     outfile.close()
+
+
+def load_variables(filename='demo_vars.pkl'):
+    infile = open(filename, 'rb')
+    variables = dill.load(infile)
+    print('      Variables:', variables)
+
+    for var in variables:
+        setattr(demo, var, variables[var])
+
+    infile.close()
 
 
 def start_server():
@@ -92,6 +104,12 @@ def app_loop(server_socket):
                     print('   * CLIENT : Restarting *')
                     pause = False
                     demo.start()
+                elif data == 'save':
+                    print('   * CLIENT : Saving variables to file')
+                    save_variables()
+                elif data == 'load':
+                    print("   * CLIENT : Loading variables from 'demo_vars' *")
+                    load_variables()
                 elif 'func:' in data:
                     function_name = data.replace('func:', '')
                     print('   * CLIENT : Calling', function_name)
@@ -103,9 +121,6 @@ def app_loop(server_socket):
                     var_type = type(getattr(demo, var_name))
                     value = var_type(value)
                     setattr(demo, var_name, value)
-                elif data == 'save':
-                    print('   * CLIENT : Saving variables to file')
-                    save_variables()
 
             except socket.timeout:
                 pass

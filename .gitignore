@@ -3,3 +3,4 @@ RPiPython/Cargo.lock
 RPiPython/**/*.rs.bk
 
 **/__pycache__/
+ScriptControl/sources/*.pkl
