@@ -4,30 +4,58 @@ import os
 import signal
 import sys
 import threading
+import dill
+import copy
+from types import ModuleType
 
-HOST = '127.0.0.1'
-PORT = 10000
 
 def signal_handler(sig, frame):
     print(' ** Closing Lamp Control ** ')
+
+    try:
+        demo.end()
+    except AttributeError:
+        pass
+
     sys.exit(0)
 
 
+def save_variables():
+    filename = 'demo_vars'
+    outfile = open(filename, 'wb')
+    variable_names = [variable for variable in dir(demo) if not variable.startswith('__')]
+
+    for variable in variable_names:
+        if not callable(getattr(demo, variable)) and not isinstance(getattr(demo, variable), ModuleType):
+            try:
+                copy = getattr(demo, variable)
+                print("      Copying:", copy)
+                dill.dump(copy, outfile)
+            except TypeError:
+                print("      Can't dill:", copy)
+    
+    outfile.close()
+
+
 def start_server():
-    print(" ** Lamp Control Started ** ")
+    host = '127.0.0.1'
+    port = 10000
+
+    print(' ** Lamp Control Started ** ')
     signal.signal(signal.SIGINT, signal_handler)
 
     socket.setdefaulttimeout(2)
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind((HOST, PORT))
+    server_socket.bind((host, port))
 
     try:
         demo.start()
     except AttributeError:
         print("Warning, 'start' function does not exists.")
 
-    if not "loop" in dir(demo):
+    if not 'loop' in dir(demo):
         print("Error, demo.py needs a 'loop' function.")
+        sys.exit(0)
     
     return server_socket
 
@@ -47,39 +75,42 @@ def app_loop(server_socket):
             conn = None
 
         if conn != None:
-            print(" - Connected by", addr)
-            conn.sendall("listening".encode())
+            print(' - Connected by', addr)
+            conn.sendall('listening'.encode())
 
             try:
                 data = conn.recv(1024)
-                data = data.decode("utf-8")
+                data = data.decode('utf-8')
 
-                if data == "pause":
+                if data == 'pause':
+                    print('   * CLIENT : Paused server *')
                     pause = True
-                    print("   * CLIENT : Paused server *")
-                elif data == "unpause":
+                elif data == 'unpause':
+                    print('   * CLIENT : Looping back up again *')
                     pause = False
-                    print("   * CLIENT : Loop back up again *")
-                elif data == "restart":
+                elif data == 'restart':
+                    print('   * CLIENT : Restarting *')
                     pause = False
-                    print("   * CLIENT : Restart *")
                     demo.start()
-                elif "func:" in data:
-                    function_name = data.replace("func:", "")
-                    print("   * CLIENT : Calling", function_name)
+                elif 'func:' in data:
+                    function_name = data.replace('func:', '')
+                    print('   * CLIENT : Calling', function_name)
                     getattr(demo, function_name)()
-                elif "var:" in data:
-                    var_and_value = data.replace("var:", "")
-                    var_name, value = var_and_value.split("=")
-                    print("   * CLIENT : Modifying", var_name, "to", value)
+                elif 'var:' in data:
+                    var_and_value = data.replace('var:', '')
+                    var_name, value = var_and_value.split('=')
+                    print('   * CLIENT : Modifying', var_name, 'to', value)
                     var_type = type(getattr(demo, var_name))
                     value = var_type(value)
                     setattr(demo, var_name, value)
+                elif data == 'save':
+                    print('   * CLIENT : Saving variables to file')
+                    save_variables()
 
             except socket.timeout:
                 pass
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     server_socket = start_server()
     app_loop(server_socket)
