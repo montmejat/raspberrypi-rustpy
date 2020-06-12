@@ -49,11 +49,12 @@ def load_variables(filename='demo_vars.pkl'):
     infile.close()
 
 
-def start_server():
+def start_server(print_debug=True):
     host = '127.0.0.1'
     port = 10000
 
-    print(' ** Lamp Control Started ** ')
+    if print_debug:
+        print(' ** Lamp Control Started ** ')
     signal.signal(signal.SIGINT, signal_handler)
 
     socket.setdefaulttimeout(2)
@@ -72,7 +73,7 @@ def start_server():
     return server_socket
 
 
-def app_loop(server_socket):
+def app_loop(server_socket, print_debug=True, send_debug_to_client=True):
     pause = False
 
     while True:
@@ -87,47 +88,49 @@ def app_loop(server_socket):
             conn = None
 
         if conn != None:
-            print(' - Connected by', addr)
+            if print_debug:
+                print(' - Connected by', addr)
             conn.sendall('listening'.encode())
 
+            message = ''
             try:
                 data = conn.recv(1024)
                 data = data.decode('utf-8')
 
                 if data == 'pause':
-                    print('   * CLIENT : Paused server *')
+                    message = "Paused server"
                     pause = True
                 elif data == 'unpause':
-                    print('   * CLIENT : Looping back up again *')
+                    message = 'Looping back up again'
                     pause = False
                 elif data == 'restart':
-                    print('   * CLIENT : Restarting *')
+                    message = 'Restarting'
                     pause = False
                     demo.start()
                 elif 'save' in data:
                     if ':' in data:
                         _, filename = data.split(':')
-                        print('   * CLIENT : Saving variables to', filename, '*')
+                        message = 'Saving variables to' + filename
                         save_variables(filename)
                     else:
-                        print("   * CLIENT : Saving variables to 'demo_vars.pkl'")
+                        message = 'Saving variables to demo_vars.pkl'
                         save_variables()
                 elif 'load' in data:
                     if ':' in data:
                         _, filename = data.split(':')
-                        print('   * CLIENT : Loading variables from', filename, '*')
+                        message = 'Loading variables from' + filename
                         load_variables(filename)
                     else:
-                        print("   * CLIENT : Loading variables from demo_vars.pkl *")
+                        message = 'Loading variables from demo_vars.pkl'
                         load_variables()
                 elif 'func:' in data:
                     function_name = data.replace('func:', '')
-                    print('   * CLIENT : Calling', function_name)
+                    message = 'Calling' + function_name
                     getattr(demo, function_name)()
                 elif 'var:' in data:
                     var_and_value = data.replace('var:', '')
                     var_name, value = var_and_value.split('=')
-                    print('   * CLIENT : Modifying', var_name, 'to', value)
+                    message = 'Modifying' + var_name + 'to' + value
 
                     try:
                         if '(' and ')' in data:
@@ -158,12 +161,20 @@ def app_loop(server_socket):
                             value = var_type(value)
                             setattr(demo, var_name, value)
                     except ValueError:
-                        print("      Cannot modify", var_name, "to", value, "of the type", var_type)
+                        message = '      Cannot modify' + var_name + 'to' + value, 'of the type' + var_type
+                else:
+                    message = 'Command not correct'
 
             except socket.timeout:
                 pass
+            
+            if send_debug_to_client:
+                conn.sendall(message.encode())
+        
+        if print_debug and message != '':
+            print('   * CLIENT :', message, '*')
 
 
 if __name__ == '__main__':
-    server_socket = start_server()
-    app_loop(server_socket)
+    server_socket = start_server(print_debug=False)
+    app_loop(server_socket, print_debug=False)

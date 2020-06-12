@@ -13,3 +13,8 @@ while True:
         if data == "listening".encode():
             print("server is listening, sending message")
             s.send(message.encode())
+
+            data = s.recv(1024)
+            print("received:", data)
+        
+    print()

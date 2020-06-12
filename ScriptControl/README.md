@@ -49,3 +49,12 @@ More options:
 
 - `func:my_func`: launch custom function defined in `demo.py`.
 - `var:my_var=value`: change a variable to the given value. Passing the type is also possible: `var:my_var=int|float|str|bool(value)`.
+
+## More stuff
+
+Possibility to hide server debug messages (although print messages from `demo.py` will still show up) when calling `start_server` and `app_loop`:
+
+```python
+def start_server(print_debug=True):
+def app_loop(server_socket, print_debug=True, send_debug_to_client=True):
+```
