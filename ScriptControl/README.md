@@ -11,12 +11,13 @@ import rpipy
 
 led = LED(26)
 my_var = 50
+my_message = "Hello!"
 
 def start():
     print("Device info:", rpipy.get_device_info(), "| temp:", rpipy.measure_temp())
 
 def loop():
-    print("Looping in demo! My var =", my_var)
+    print("Looping in demo! My var =", my_var, "My message:", my_message)
     led.on()
     sleep(1)
     led.off()
@@ -36,10 +37,15 @@ In the main loop of the server, it first executes the code of the `loop()` funct
 
 Commands you can send:
 
+Basic control:
+
 - `pause`: pause the execution of `loop()`.
 - `unpause`: unpause the execution of `loop()`.
 - `restart`: execute `start()` again.
-- `save`: saves all the variables from `demo.py`.
-- `load`: loads all the variables from `demo.py`.
+- `save:filename`: saves all the variables from `demo.py`. If the filename is not specified it is `demo_vars.pkl` by default. The filename extension must be specified if custom. 
+- `load:filename`: loads all the variables from `demo.py`. Same option for the filename as with the `save` command.
+
+More options:
+
 - `func:my_func`: launch custom function defined in `demo.py`.
-- `var:my_var=value`: change a variable to the given value.
+- `var:my_var=value`: change a variable to the given value. Passing the type is also possible: `var:my_var=int|float|str|bool(value)`.

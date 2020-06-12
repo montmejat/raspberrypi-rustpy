@@ -118,7 +118,7 @@ def app_loop(server_socket):
                         print('   * CLIENT : Loading variables from', filename, '*')
                         load_variables(filename)
                     else:
-                        print("   * CLIENT : Loading variables from 'demo_vars.pkl' *")
+                        print("   * CLIENT : Loading variables from demo_vars.pkl *")
                         load_variables()
                 elif 'func:' in data:
                     function_name = data.replace('func:', '')
@@ -128,9 +128,37 @@ def app_loop(server_socket):
                     var_and_value = data.replace('var:', '')
                     var_name, value = var_and_value.split('=')
                     print('   * CLIENT : Modifying', var_name, 'to', value)
-                    var_type = type(getattr(demo, var_name))
-                    value = var_type(value)
-                    setattr(demo, var_name, value)
+
+                    try:
+                        if '(' and ')' in data:
+                            value = value.replace('(', '').replace(')', '')
+
+                            if 'int' in data:
+                                var_type = 'int'
+                                value = value.replace('int', '')
+                                value = int(value)
+                                setattr(demo, var_name, value)
+                            elif 'float' in data:
+                                var_type = 'float'
+                                value = value.replace('float', '')
+                                value = float(value)
+                                setattr(demo, var_name, value)
+                            elif 'str' in data:
+                                var_type = 'str'
+                                value = value.replace('str', '').replace("'", '').replace('"', '')
+                                value = str(value)
+                                setattr(demo, var_name, value)
+                            elif 'bool' in data:
+                                var_type = 'bool'
+                                value = value.replace('bool', '')
+                                value = bool(value)
+                                setattr(demo, var_name, value)
+                        else:
+                            var_type = type(getattr(demo, var_name))
+                            value = var_type(value)
+                            setattr(demo, var_name, value)
+                    except ValueError:
+                        print("      Cannot modify", var_name, "to", value, "of the type", var_type)
 
             except socket.timeout:
                 pass
