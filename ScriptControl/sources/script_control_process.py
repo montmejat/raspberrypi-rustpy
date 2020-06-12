@@ -104,12 +104,22 @@ def app_loop(server_socket):
                     print('   * CLIENT : Restarting *')
                     pause = False
                     demo.start()
-                elif data == 'save':
-                    print('   * CLIENT : Saving variables to file')
-                    save_variables()
-                elif data == 'load':
-                    print("   * CLIENT : Loading variables from 'demo_vars' *")
-                    load_variables()
+                elif 'save' in data:
+                    if ':' in data:
+                        _, filename = data.split(':')
+                        print('   * CLIENT : Saving variables to', filename, '*')
+                        save_variables(filename)
+                    else:
+                        print("   * CLIENT : Saving variables to 'demo_vars.pkl'")
+                        save_variables()
+                elif 'load' in data:
+                    if ':' in data:
+                        _, filename = data.split(':')
+                        print('   * CLIENT : Loading variables from', filename, '*')
+                        load_variables(filename)
+                    else:
+                        print("   * CLIENT : Loading variables from 'demo_vars.pkl' *")
+                        load_variables()
                 elif 'func:' in data:
                     function_name = data.replace('func:', '')
                     print('   * CLIENT : Calling', function_name)
