@@ -6,16 +6,18 @@ import sys
 import threading
 import dill
 import copy
+import threading
+import queue
 from types import ModuleType
 
 
 def signal_handler(sig, frame):
-    print(' ** Closing Lamp Control ** ')
+    print(' CLOSING : ** Closing Script Control ** ')
 
     try:
         demo.end()
     except AttributeError:
-        pass
+        print("No end() method")
 
     sys.exit(0)
 
@@ -73,13 +75,10 @@ def start_server(print_debug=True):
     return server_socket
 
 
-def app_loop(server_socket, print_debug=True, send_debug_to_client=True):
+def thread_server(server_socket, pause_queue, print_debug=True, send_debug_to_client=True):
     pause = False
 
     while True:
-        if not pause:
-            demo.loop()
-
         server_socket.listen()
 
         try:
@@ -87,12 +86,12 @@ def app_loop(server_socket, print_debug=True, send_debug_to_client=True):
         except socket.timeout:
             conn = None
 
+        message = ''
         if conn != None:
             if print_debug:
                 print(' - Connected by', addr)
             conn.sendall('listening'.encode())
 
-            message = ''
             try:
                 data = conn.recv(1024)
                 data = data.decode('utf-8')
@@ -173,8 +172,24 @@ def app_loop(server_socket, print_debug=True, send_debug_to_client=True):
         
         if print_debug and message != '':
             print('   * CLIENT :', message, '*')
+        
+        pause_queue.put(pause)
+
+
+def app_loop(server_socket, print_debug=True, send_debug_to_client=True):
+    pause_queue = queue.Queue()
+    pause_queue.put(False)
+
+    thread = threading.Thread(target=thread_server, args=(server_socket, pause_queue, print_debug, send_debug_to_client))
+    thread.daemon = True
+    thread.start()
+
+    while True:
+        pause = pause_queue.get()
+        if not pause:
+            demo.loop()
 
 
 if __name__ == '__main__':
-    server_socket = start_server(print_debug=False)
-    app_loop(server_socket, print_debug=False)
+    server_socket = start_server(print_debug=True)
+    app_loop(server_socket, print_debug=True)
