@@ -1,20 +1,17 @@
 import socket
+import zmq
 
-HOST = '127.0.0.1'
-PORT = 10000
+context = zmq.Context()
+
+socket = context.socket(zmq.REQ)
+socket.connect("tcp://localhost:5555")
 
 while True:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        message = input("send:")
-        s.connect(('', PORT))
+    message = input("send:")
 
-        data = s.recv(1024)
-        print("received:", data)
-        if data == "listening".encode():
-            print("server is listening, sending message")
-            s.send(message.encode())
+    socket.send(message.encode())
 
-            data = s.recv(1024)
-            print("received:", data)
+    data = socket.recv()
+    print("received:", data)
         
     print()
