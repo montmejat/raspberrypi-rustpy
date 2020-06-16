@@ -50,7 +50,7 @@ def start_server(print_debug=True):
 
     context = zmq.Context()
     socket = context.socket(zmq.REP)
-    socket.bind("tcp://*:5555")
+    socket.bind("ipc://demoserver")
 
     try:
         demo.start()
