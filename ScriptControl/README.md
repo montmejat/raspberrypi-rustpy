@@ -1,4 +1,4 @@
-# Raspberry Hardware Script Launching Server
+# Raspberry Hardware Demo Script Server
 
 ## `Demo.py` script
 
