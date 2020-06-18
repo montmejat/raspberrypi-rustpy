@@ -33,22 +33,44 @@ def my_func():
 
 ## Communication with the server
 
+### How it works
+
 In the main loop of the server, it first executes the code of the `loop()` function defined in `demo.py` then tells all connected clients that it is listening for 2 seconds. If no new connections have been detected, it will continue executing the `loop()` code.
 
 Commands you can send:
 
 Basic control:
 
-- `pause`: pause the execution of `loop()`.
-- `unpause`: unpause the execution of `loop()`.
-- `restart`: execute `start()` again.
-- `save:filename`: saves all the variables from `demo.py`. If the filename is not specified it is `demo_vars.pkl` by default. The filename extension must be specified if custom. 
-- `load:filename`: loads all the variables from `demo.py`. Same option for the filename as with the `save` command.
+- `{ 'type': 'action', 'value': 'pause' }`: pause the execution of `loop()`.
+- `{ 'type': 'action', 'value': 'unpause' }`: unpause the execution of `loop()`.
+- `{ 'type': 'action', 'value': 'restart' }`: execute `start()` again.
+- `{ 'type': 'action', 'value': 'save', 'arg': 'filename' }`: saves all the variables from `demo.py`. If the filename is not specified it is `demo_vars.pkl` by default. The filename extension must be specified if custom. 
+- `{ 'type': 'action', 'value': 'load', 'arg': 'filename' }`: loads all the variables from `demo.py`. Same option for the filename as with the `save` command.
 
 More options:
 
-- `func:my_func`: launch custom function defined in `demo.py`.
-- `var:my_var=value`: change a variable to the given value. Passing the type is also possible: `var:my_var=int|float|str|bool(value)`.
+- `{ 'type': 'call', 'value': 'my_func' }`: launch custom function defined in `demo.py`.
+- `{ 'type': 'set', 'var': 'my_val', 'value': 50, 'cast': '[int|float|bool|str]' }`: change a variable to the given value. Passing the type is optionnal.
+
+### Test it yourself
+
+Start the app:
+
+`python3 demo_controller_app.py`
+
+In an other shell, you can try sending it commands:
+
+```python
+>>> import cbor, zmq
+>>> context = zmq.Context()
+>>> socket = context.socket(zmq.REQ)
+>>> # send request
+>>> socket.connect("tcp://localhost:5555")
+>>> message = { 'type': 'set', 'var': 'my_val', 'value': '40' }
+>>> socket.send(cbor.dumps(message))
+>>> # get response 
+>>> data = socket.recv()
+```
 
 ## More stuff
 
