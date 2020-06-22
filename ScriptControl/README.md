@@ -1,4 +1,4 @@
-# Raspberry Hardware Script Launching Server
+# Raspberry Hardware Demo Script Server
 
 ## `Demo.py` script
 
@@ -66,7 +66,7 @@ In an other shell, you can try sending it commands:
 >>> socket = context.socket(zmq.REQ)
 >>> # send request
 >>> socket.connect("tcp://localhost:5555")
->>> message = { 'type': 'set', 'var': 'my_val', 'value': '40' }
+>>> message = { 'type': 'set', 'var': 'my_var', 'value': '40' }
 >>> socket.send(cbor.dumps(message))
 >>> # get response 
 >>> data = socket.recv()
