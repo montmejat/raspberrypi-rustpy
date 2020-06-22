@@ -43,7 +43,7 @@ Basic control:
 
 - `{ 'type': 'action', 'value': 'pause' }`: pause the execution of `loop()`.
 - `{ 'type': 'action', 'value': 'unpause' }`: unpause the execution of `loop()`.
-- `{ 'type': 'action', 'value': 'restart' }`: execute `start()` again.
+- `{ 'type': 'action', 'value': 'restart', 'key': 'test' }`: execute `start()` again. Needs an admin key.
 - `{ 'type': 'action', 'value': 'save', 'arg': 'filename' }`: saves all the variables from `demo.py`. If the filename is not specified it is `demo_vars.pkl` by default. The filename extension must be specified if custom. 
 - `{ 'type': 'action', 'value': 'load', 'arg': 'filename' }`: loads all the variables from `demo.py`. Same option for the filename as with the `save` command.
 

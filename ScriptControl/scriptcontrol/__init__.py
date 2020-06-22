@@ -1,4 +1,4 @@
-import os, signal, sys, cbor, zmq
+import os, signal, sys, cbor, zmq, hashlib
 from threading import Thread
 from types import ModuleType
 
@@ -11,12 +11,13 @@ class CommunicationsThread(Thread):
         self.socket = socket
         self.print_debug = print_debug
         self.send_debug_to_client = send_debug_to_client
+        self.hash_key = hashlib.sha256('test'.encode()).hexdigest()
 
     def run(self):
         global pause
 
         while True:
-            event_count = self.socket.poll(500)
+            event_count = self.socket.poll(1000)
 
             message = ''
             if event_count != 0:
@@ -31,9 +32,14 @@ class CommunicationsThread(Thread):
                         message = 'Looping back up again'
                         pause = False
                     elif data['value'] == 'restart':
-                        message = 'Restarting'
-                        pause = False
-                        demo.start()
+                        key = data['key']
+                        key = hashlib.sha256(key.encode()).hexdigest()
+                        if key == self.hash_key:
+                            message = 'Restarting'
+                            pause = False
+                            demo.start()
+                        else:
+                            message = 'Key not correct!'
                     elif data['value'] == 'save':
                         if 'filename' in data.keys():
                             filename = data.split('filename')
