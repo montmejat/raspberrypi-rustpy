@@ -2,5 +2,8 @@ RPiPython/target/
 RPiPython/Cargo.lock
 RPiPython/**/*.rs.bk
 
+rpi-web/target/
+rpi-web/Cargo.lock
+
 **/__pycache__/
 ScriptControl/sources/*.pkl
