@@ -8,7 +8,9 @@ To build and run:
 
 ## How to use
 
+![alt text](doc/screenshot.png)
+
 You can use the app through the interface or send the following requests:
 
-- `ip:8000/pause`
-- `ip:8000/unpause`
+- `raspberry_ip:8000/pause`
+- `raspberry_ip:8000/unpause`

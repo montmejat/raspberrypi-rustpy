@@ -1,9 +1,9 @@
-RPiPython/target/
-RPiPython/Cargo.lock
-RPiPython/**/*.rs.bk
+RustPyLib/target/
+RustPyLib/Cargo.lock
+RustPyLib/**/*.rs.bk
 
-rpi-web/target/
-rpi-web/Cargo.lock
+WebServer/target/
+WebServer/Cargo.lock
 
 **/__pycache__/
 ScriptControl/sources/*.pkl

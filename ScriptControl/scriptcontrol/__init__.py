@@ -56,6 +56,14 @@ class CommunicationsThread(Thread):
                         else:
                             message = 'Loading variables from demo_vars.pkl'
                             load_variables()
+                elif data['type'] == 'get' and data['value'] == 'state':
+                    paused = 'false'
+                    if pause:
+                        paused = 'true'
+
+                    message = cbor.dumps({ 'paused': paused })
+                    self.socket.send(message)
+                    continue
                 elif data['type'] == 'call':
                     function_name = data['value']
                     message = 'Calling ' + function_name
