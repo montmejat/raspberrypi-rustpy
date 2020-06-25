@@ -2,4 +2,6 @@
 
 Tested on Raspberry Pi 3 running on Raspberry Pi OS (32 bit).
 
-To compile, simply launch a `make all` in the root of the project then go into each individual directories to learn more. 
+![Smarphone Screenshot](Documentation/architecture.png)
+
+Launch a `make all` in the root of the project to build the RustPython Library and copy the files to the demo folder. Go into each individual directories to learn more. 
