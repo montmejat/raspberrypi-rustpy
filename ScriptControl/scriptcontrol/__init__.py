@@ -28,9 +28,11 @@ class CommunicationsThread(Thread):
                     if data['value'] == 'pause':
                         message = "Paused server"
                         pause = True
+
                     elif data['value'] == 'unpause':
                         message = 'Looping back up again'
                         pause = False
+
                     elif data['value'] == 'restart':
                         key = data['key']
                         key = hashlib.sha256(key.encode()).hexdigest()
@@ -40,6 +42,7 @@ class CommunicationsThread(Thread):
                             demo.start()
                         else:
                             message = 'Key not correct!'
+                        
                     elif data['value'] == 'save':
                         if 'filename' in data.keys():
                             filename = data.split('filename')
@@ -48,6 +51,7 @@ class CommunicationsThread(Thread):
                         else:
                             message = 'Saving variables to demo_vars.pkl'
                             save_variables()
+                        
                     elif data['value'] == 'load':
                         if ':' in data:
                             _, filename = data.split(':')
@@ -56,18 +60,40 @@ class CommunicationsThread(Thread):
                         else:
                             message = 'Loading variables from demo_vars.pkl'
                             load_variables()
-                elif data['type'] == 'get' and data['value'] == 'state':
-                    paused = 'false'
-                    if pause:
-                        paused = 'true'
 
-                    message = cbor.dumps({ 'paused': paused })
-                    self.socket.send(message)
-                    continue
+                elif data['type'] == 'get':
+                    if data['value'] == 'state':
+                        paused = 'false'
+                        if pause:
+                            paused = 'true'
+
+                        message = cbor.dumps({ 'paused': paused })
+                        self.socket.send(message)
+                        continue
+                    
+                    if data['value'] == 'settings':
+                        variable_names = [variable for variable in dir(demo.param) if not (variable.startswith('__') or variable == 'SliderValue')]
+                        variables = {}
+
+                        for variable_name in variable_names:
+                            variable = getattr(demo.param, variable_name)
+
+                            if type(variable) == demo.Settings.SliderValue:
+                                variables[variable_name] = str(str(variable.min) + ':' + str(variable.value) + ':' + str(variable.max))
+                            else:
+                                variables[variable_name] = str(variable)
+                        
+                        print("   * CLIENT : requested settings '", variables, " *")
+
+                        message = cbor.dumps(variables)
+                        self.socket.send(message)
+                        continue
+
                 elif data['type'] == 'call':
                     function_name = data['value']
                     message = 'Calling ' + function_name
                     getattr(demo, function_name)()
+
                 elif data['type'] == 'set':
                     var_name = data['var']
                     value = data['value']

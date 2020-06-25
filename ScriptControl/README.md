@@ -42,6 +42,7 @@ Commands you can send:
 Basic control:
 
 - `{ 'type': 'get', 'value': 'state' }`: get the state of the controller. Returns a CBOR encoded dictionnary `{ 'paused': 'true/false' }`
+- `{ 'type': 'get', 'value': 'settings'}`: get the names and values of the variables saved in the `Settings` class. Returns a CBOR encoded dictionnary `{ 'var1': 'value', 'var2': 'value' }`
 - `{ 'type': 'action', 'value': 'pause' }`: pause the execution of `loop()`.
 - `{ 'type': 'action', 'value': 'unpause' }`: unpause the execution of `loop()`.
 - `{ 'type': 'action', 'value': 'restart', 'key': 'test' }`: execute `start()` again. Needs an admin key.

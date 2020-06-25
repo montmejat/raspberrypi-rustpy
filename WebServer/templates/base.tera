@@ -11,12 +11,12 @@
         </div>
 
         <div class="text-center">
-            <h4>Demo script</h4>
+            <h4>Lumino Project</h4>
         </div>
 
         <div class="form-inline">
-            <a href="#"><img src="bootstrap-icons-1.0.0-alpha4/arrow-left.svg" alt="" width="32" height="32" title="Left cycle"></a>
-            <a href="#"><img src="bootstrap-icons-1.0.0-alpha4/arrow-right.svg" alt="" width="32" height="32" title="Right cycle"></a>
+            <a href="http://192.168.0.26:8000/demo"><img src="bootstrap-icons-1.0.0-alpha4/arrow-left.svg" alt="" width="32" height="32" title="Left cycle"></a>
+            <a href="http://192.168.0.26:8000/demo"><img src="bootstrap-icons-1.0.0-alpha4/arrow-right.svg" alt="" width="32" height="32" title="Right cycle"></a>
         </div>
     </div>
 </nav>

@@ -1,0 +1,77 @@
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<link rel="stylesheet" href="bootstrap-4.3.1-dist/css/bootstrap.min.css">
+
+<style>
+    .slidecontainer {
+        width: 100%;
+    }
+
+    .slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 10px;
+        border-radius: 5px;
+        background: #d3d3d3;
+        outline: none;
+        opacity: 0.7;
+        -webkit-transition: .2s;
+        transition: opacity .2s;
+    }
+
+    .slider:hover {
+        opacity: 1;
+    }
+
+    .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        background: #007bff;
+        cursor: pointer;
+    }
+
+    .slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #007bff;
+        cursor: pointer;
+    }
+</style>
+
+<nav class="navbar navbar-light bg-light mb-3">
+    <div class="container">
+        <div class="text-left">
+            <a href="http://192.168.0.26:8000/{{action}}"><img src="bootstrap-icons-1.0.0-alpha4/{{icon_name}}.svg" alt="" width="32" height="32" title="Pause"></a>
+        </div>
+
+        <div class="text-center">
+            <h4>Demo script</h4>
+        </div>
+
+        <div class="form-inline">
+            <a href="http://192.168.0.26:8000/"><img src="bootstrap-icons-1.0.0-alpha4/arrow-left.svg" alt="" width="32" height="32" title="Left cycle"></a>
+            <a href="http://192.168.0.26:8000/"><img src="bootstrap-icons-1.0.0-alpha4/arrow-right.svg" alt="" width="32" height="32" title="Right cycle"></a>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="jumbotron">
+        <h1 class="display-4" style="font-size:2.5rem">Settings</h1>
+            {% for element in elements %}
+                <div class="row pb-2">
+                    {{ element }}
+                </div>
+            {% endfor %}
+        <hr>
+        <div class="text-right">
+            <button type="button" class="btn btn-primary">Send</button>
+        </div>
+    </div>
+</div>
