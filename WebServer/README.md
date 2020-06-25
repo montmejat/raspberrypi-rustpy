@@ -8,7 +8,7 @@ To build and run:
 
 ## How to use
 
-![alt text](doc/screenshot.png)
+![Interface Screenshot](doc/screenshot_desktop.png)
 
 You can use the app through the interface or send the following requests:
 
