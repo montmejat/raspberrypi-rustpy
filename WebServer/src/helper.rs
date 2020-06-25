@@ -82,23 +82,19 @@ pub fn to_html(variable: (String, String)) -> String {
     if value.contains(":") {
         let values: Vec<&str> = value.split(":").collect();
 
-        format!("<div class=\"col-3\">
+        format!("<div class=\"col-4\">
                     <b>{}</b>
-                </div>
-                <div style=\"width: 40px\">
-                    {}
                 </div>
                 <div class=\"col-8 pl-0\" style=\"height: 25px; background: #e9ecef; display: flex; align-items: center;\">
+                    <span class=\"badge badge-secondary\">{}</span>
                     <input type=\"range\" min=\"{}\" max=\"{}\" value=\"{}\" class=\"slider\">
-                </div>
-                <div style=\"width: 40px\">
-                    {}
+                    <span class=\"badge badge-secondary\">{}</span>
                 </div>", variable_name, values[0], values[0], values[2], values[1], values[2])
     } else {
-        format!("<div class=\"col-3\">
+        format!("<div class=\"col-4 col-form-label\">
                     <b>{}</b>
                 </div>
-                <div class=\"col-9 pl-0\">
+                <div class=\"col-8 pl-0\">
                     <input class=\"form-control\" type=\"text\" value=\"{}\">
                 </div>", variable_name, value)
     }
