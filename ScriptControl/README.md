@@ -10,14 +10,26 @@ from time import sleep
 import rpipy
 
 led = LED(26)
-my_var = 50
-my_message = "Hello!"
+
+class Settings:
+    def __init__(self):
+        self.my_var = 50
+        self.my_message = "Hello!"
+        self.slider_var = self.SliderValue(0, 100, 50)
+
+    class SliderValue:
+        def __init__(self, min, max, value=0):
+            self.min = min
+            self.max = max
+            self.value = value
+
+param = Settings()
 
 def start():
     print("Device info:", rpipy.get_device_info(), "| temp:", rpipy.measure_temp())
 
 def loop():
-    print("Looping in demo! My var =", my_var, "My message:", my_message)
+    print("Looping in demo! My var =", param.my_var, "| My message:", param.my_message, "| My slider value:", param.slider_var.value)
     led.on()
     sleep(1)
     led.off()
@@ -52,7 +64,7 @@ Basic control:
 More options:
 
 - `{ 'type': 'call', 'value': 'my_func' }`: launch custom function defined in `demo.py`.
-- `{ 'type': 'set', 'var': 'my_val', 'value': 50, 'cast': '[int|float|bool|str]' }`: change a variable to the given value. Passing the type is optionnal.
+- `{ 'type': 'set', 'var': 'my_val', 'value': 50, 'cast': '[int|float|bool|str]' }`: change a variable to the given value. Passing the type in `cast` is optionnal.
 
 ### Test it yourself
 

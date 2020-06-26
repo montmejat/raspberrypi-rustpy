@@ -9,6 +9,7 @@ class Settings:
         self.my_var = 50
         self.my_message = "Hello!"
         self.slider_var = self.SliderValue(0, 100, 50)
+        self.another_slider = self.SliderValue(10, 40, 20)
 
     class SliderValue:
         def __init__(self, min, max, value=0):

@@ -62,15 +62,36 @@
 
 <div class="container">
     <div class="jumbotron">
-        <h1 class="display-4" style="font-size:2.5rem">Settings</h1>
-            {% for element in elements %}
+        <form action="/demo/send" method="post">
+            <h1 class="display-4" style="font-size:2.5rem">Settings</h1>
+            <hr>
+            {% for slider in settings_sliders %}
                 <div class="row pb-2">
-                    {{ element }}
+                    <div class="col-4">
+                        <b>{{ slider.name }}</b>
+                    </div>
+                    <div class="col-8 pl-0" style="height: 25px; background: #e9ecef; display: flex; align-items: center;">
+                        <span class="badge badge-secondary">{{ slider.min }}</span>
+                        <input name="{{ slider.name }}" type="range" min="{{ slider.min }}" max="{{ slider.max }}" value="{{ slider.value }}" class="slider">
+                        <span class="badge badge-secondary">{{ slider.max }}</span>
+                    </div>
                 </div>
             {% endfor %}
-        <hr>
-        <div class="text-right">
-            <button type="button" class="btn btn-primary">Send</button>
-        </div>
+
+            {% for variable in settings_others %}
+                <div class="row pb-2">
+                    <div class="col-4 col-form-label">
+                        <b>{{ variable.name }}</b>
+                    </div>
+                    <div class="col-8 pl-0">
+                        <input name="{{ variable.name }}" class="form-control" type="text" value="{{ variable.value }}">
+                    </div>
+                </div>
+            {% endfor %}
+            <hr>
+            <div class="text-right">
+                <button type="submit" class="btn btn-primary">Send</button>
+            </div>
+        </form>
     </div>
 </div>

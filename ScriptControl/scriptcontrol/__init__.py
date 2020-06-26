@@ -103,22 +103,27 @@ class CommunicationsThread(Thread):
                         try:
                             if data['cast'] == 'int':
                                 value = int(value)
-                                setattr(demo, var_name, value)
+                                setattr(demo.param, var_name, value)
                             elif data['cast'] == 'float':
                                 value = float(value)
-                                setattr(demo, var_name, value)
+                                setattr(demo.param, var_name, value)
                             elif data['cast'] == 'str':
                                 value = str(value)
-                                setattr(demo, var_name, value)
+                                setattr(demo.param, var_name, value)
                             elif data['cast'] == 'bool':
                                 value = bool(value)
-                                setattr(demo, var_name, value)
+                                setattr(demo.param, var_name, value)
                         except ValueError:
                             message = '      Cannot modify' + var_name + 'to' + value, 'of the type' + data['cast']
                     else:
-                        var_type = type(getattr(demo, var_name))
-                        value = var_type(value)
-                        setattr(demo, var_name, value)
+                        var_type = type(getattr(demo.param, var_name))
+                        if var_type == demo.Settings.SliderValue:
+                            slider = getattr(demo.param, var_name)
+                            slider.value = value
+                            setattr(demo.param, var_name, slider)
+                        else:
+                            value = var_type(value)
+                            setattr(demo.param, var_name, value)
                 else:
                     message = 'Command not correct'
 
