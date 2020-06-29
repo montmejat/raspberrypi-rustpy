@@ -16,6 +16,8 @@ pub mod script_controller {
     use serde_cbor::to_vec;
     use serde_cbor::from_slice;
     use std::collections::HashMap;
+    use std::process::Command;
+    use std::str::from_utf8;
 
     pub struct Slider {
         pub name: String,
@@ -27,6 +29,11 @@ pub mod script_controller {
     pub struct Variable {
         pub name: String,
         pub value: String,
+    }
+
+    pub fn is_running() -> bool {
+        let output = Command::new("sh").arg("-c").arg("ps -au | grep python3").output().expect("failed to execute process");
+        from_utf8(&output.stdout).unwrap().contains("demo_controller_app.py")
     }
 
     pub fn connect() -> Socket {

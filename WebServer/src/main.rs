@@ -19,6 +19,7 @@ struct DemoTemplate {
     icon_name: String,
     settings_sliders: Vec<helper::script_controller::Slider>,
     settings_others: Vec<helper::script_controller::Variable>,
+    is_running: bool,
 }
 
 #[derive(Template)]
@@ -27,6 +28,7 @@ struct HomeTemplate {
     action: String,
     icon_name: String,
     cpu_temp: String,
+    is_running: bool,
 }
 
 #[get("/pause")]
@@ -63,27 +65,33 @@ fn demo_unpause() -> Redirect {
 
 #[get("/")]
 fn index() -> HomeTemplate {
-    let socket = helper::script_controller::connect();
+    let is_running = helper::script_controller::is_running();
+
     let mut action = "";
     let mut icon_name = "";
+    if is_running {
+        let socket = helper::script_controller::connect();
 
-    match helper::script_controller::get_state(&socket) {
-        Ok(value) => {
-            match value.get("paused") {
-                Some(paused) => {
-                    if paused == "false" {
-                        action = "pause";
-                        icon_name = "pause";
-                    } else {
-                        action = "unpause";
-                        icon_name = "play";
-                    }
-                },
-                None => {}
-            }
-            
-        },
-        Err(_) => println!("Error retreiving state of controller...")
+        match helper::script_controller::get_state(&socket) {
+            Ok(value) => {
+                match value.get("paused") {
+                    Some(paused) => {
+                        if paused == "false" {
+                            action = "pause";
+                            icon_name = "pause";
+                        } else {
+                            action = "unpause";
+                            icon_name = "play";
+                        }
+                    },
+                    None => {}
+                }
+                
+            },
+            Err(_) => println!("Error retreiving state of controller...")
+        }
+    } else {
+        icon_name = "x-circle";
     }
     
     let cpu_temp = helper::raspberry::get_cpu_temp();
@@ -92,42 +100,50 @@ fn index() -> HomeTemplate {
         action: action.to_string(),
         icon_name: icon_name.to_string(),
         cpu_temp: cpu_temp.to_string(),
+        is_running: is_running,
     }
 }
 
 #[get("/demo")]
 fn demo() -> DemoTemplate {
-    let socket = helper::script_controller::connect();
+    let is_running = helper::script_controller::is_running();
+
     let mut action = "";
     let mut icon_name = "";
-
-    match helper::script_controller::get_state(&socket) {
-        Ok(value) => {
-            match value.get("paused") {
-                Some(paused) => {
-                    if paused == "false" {
-                        action = "demo/pause";
-                        icon_name = "pause";
-                    } else {
-                        action = "demo/unpause";
-                        icon_name = "play";
-                    }
-                },
-                None => {}
-            }
-            
-        },
-        Err(_) => println!("Error retreiving state of controller...")
-    }
-
     let mut settings_sliders = Vec::<helper::script_controller::Slider>::new();
     let mut settings_others = Vec::<helper::script_controller::Variable>::new();
-    match helper::script_controller::get_settings(&socket) {
-        Ok((sliders, others)) => {
-            settings_sliders = sliders;
-            settings_others = others;
-        },
-        Err(_) => println!("Error retreiving demo settings of controller...")
+    
+    if is_running {
+        let socket = helper::script_controller::connect();
+
+        match helper::script_controller::get_state(&socket) {
+            Ok(value) => {
+                match value.get("paused") {
+                    Some(paused) => {
+                        if paused == "false" {
+                            action = "pause";
+                            icon_name = "pause";
+                        } else {
+                            action = "unpause";
+                            icon_name = "play";
+                        }
+                    },
+                    None => {}
+                }
+                
+            },
+            Err(_) => println!("Error retreiving state of controller...")
+        }
+
+        match helper::script_controller::get_settings(&socket) {
+            Ok((sliders, others)) => {
+                settings_sliders = sliders;
+                settings_others = others;
+            },
+            Err(_) => println!("Error retreiving demo settings of controller...")
+        }
+    } else {
+        icon_name = "x-circle";
     }
 
     DemoTemplate {
@@ -135,6 +151,7 @@ fn demo() -> DemoTemplate {
         icon_name: icon_name.to_string(),
         settings_sliders: settings_sliders,
         settings_others: settings_others,
+        is_running: is_running,
     }
 }
 

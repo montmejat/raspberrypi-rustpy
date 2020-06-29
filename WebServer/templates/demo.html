@@ -46,7 +46,7 @@
 <nav class="navbar navbar-light bg-light mb-3">
     <div class="container">
         <div class="text-left">
-            <a href="http://192.168.0.26:8000/{{action}}"><img src="bootstrap-icons-1.0.0-alpha4/{{icon_name}}.svg" alt="" width="32" height="32" title="Pause"></a>
+            <a {% if is_running -%} href="http://192.168.0.26:8000/{{action}}" {% endif -%}><img src="bootstrap-icons-1.0.0-alpha4/{{icon_name}}.svg" alt="" width="32" height="32"></a>
         </div>
 
         <div class="text-center">
@@ -65,33 +65,39 @@
         <form action="/demo/send" method="post">
             <h1 class="display-4" style="font-size:2.5rem">Settings</h1>
             <hr>
-            {% for slider in settings_sliders %}
-                <div class="row pb-2">
-                    <div class="col-4">
-                        <b>{{ slider.name }}</b>
+            {% if is_running -%}
+                {% for slider in settings_sliders %}
+                    <div class="row pb-2">
+                        <div class="col-4">
+                            <b>{{ slider.name }}</b>
+                        </div>
+                        <div class="col-8 pl-0" style="height: 25px; background: #e9ecef; display: flex; align-items: center;">
+                            <span class="badge badge-secondary">{{ slider.min }}</span>
+                            <input name="{{ slider.name }}" type="range" min="{{ slider.min }}" max="{{ slider.max }}" value="{{ slider.value }}" class="slider">
+                            <span class="badge badge-secondary">{{ slider.max }}</span>
+                        </div>
                     </div>
-                    <div class="col-8 pl-0" style="height: 25px; background: #e9ecef; display: flex; align-items: center;">
-                        <span class="badge badge-secondary">{{ slider.min }}</span>
-                        <input name="{{ slider.name }}" type="range" min="{{ slider.min }}" max="{{ slider.max }}" value="{{ slider.value }}" class="slider">
-                        <span class="badge badge-secondary">{{ slider.max }}</span>
-                    </div>
-                </div>
-            {% endfor %}
+                {% endfor %}
 
-            {% for variable in settings_others %}
-                <div class="row pb-2">
-                    <div class="col-4 col-form-label">
-                        <b>{{ variable.name }}</b>
+                {% for variable in settings_others %}
+                    <div class="row pb-2">
+                        <div class="col-4 col-form-label">
+                            <b>{{ variable.name }}</b>
+                        </div>
+                        <div class="col-8 pl-0">
+                            <input name="{{ variable.name }}" class="form-control" type="text" value="{{ variable.value }}">
+                        </div>
                     </div>
-                    <div class="col-8 pl-0">
-                        <input name="{{ variable.name }}" class="form-control" type="text" value="{{ variable.value }}">
-                    </div>
-                </div>
-            {% endfor %}
+                {% endfor %}
+            {% else -%}
+                <p>The Python Script Controller is not running.</p>
+            {% endif -%}
             <hr>
+            {% if is_running -%}
             <div class="text-right">
                 <button type="submit" class="btn btn-primary">Send</button>
             </div>
+            {% endif -%}
         </form>
     </div>
 </div>

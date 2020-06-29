@@ -7,7 +7,7 @@
 <nav class="navbar navbar-light bg-light mb-3">
     <div class="container">
         <div class="text-left">
-            <a href="http://192.168.0.26:8000/{{action}}"><img src="bootstrap-icons-1.0.0-alpha4/{{icon_name}}.svg" alt="" width="32" height="32" title="Pause"></a>
+            <a {% if is_running -%} href="http://192.168.0.26:8000/{{action}}" {% endif -%}><img src="bootstrap-icons-1.0.0-alpha4/{{icon_name}}.svg" alt="" width="32" height="32"></a>
         </div>
 
         <div class="text-center">
@@ -24,6 +24,20 @@
 <div class="container">
     <div class="jumbotron">
         <h1 class="display-4" style="font-size:2.5rem">My RaspberryPi</h1>
-        <p class="lead">CPU {{cpu_temp}}</p>
+        <p class="lead">
+            <div class="container">
+                <div class="row">
+                    <div>CPU {{ cpu_temp }}</div>
+                </div>
+                <div class="row">
+                    <div>Python Controller
+                        {% if is_running -%}
+                            <img src="bootstrap-icons-1.0.0-alpha4/circle-fill-green.svg" alt="" width="12" height="12">
+                        {% else -%}
+                            <img src="bootstrap-icons-1.0.0-alpha4/circle-fill-red.svg" alt="" width="12" height="12">
+                        {% endif -%}</div>
+                </div>
+            </div>
+        </p>
     </div>
 </div>
