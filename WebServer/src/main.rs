@@ -8,9 +8,16 @@ mod helper;
 use rocket::response::Redirect;
 use rocket::request::{FromForm, FormItems, Form};
 use rocket_contrib::serve::StaticFiles;
+
 use askama::Template;
+
+use tungstenite::accept_hdr;
+use tungstenite::handshake::server::{Request, Response};
+
 use std::result::Result;
 use std::collections::HashMap;
+use std::net::TcpListener;
+use std::thread::spawn;
 
 #[derive(Template)]
 #[template(path = "demo.html")]
@@ -112,7 +119,7 @@ fn demo() -> DemoTemplate {
     let mut icon_name = "";
     let mut settings_sliders = Vec::<helper::script_controller::Slider>::new();
     let mut settings_others = Vec::<helper::script_controller::Variable>::new();
-    
+
     if is_running {
         let socket = helper::script_controller::connect();
 
@@ -197,6 +204,34 @@ fn send(form: Form<Item>) -> Redirect{
 }
 
 fn rocket() -> rocket::Rocket {
+    spawn(move || {
+        let server = TcpListener::bind("0.0.0.0:3012").unwrap();
+        let socket = helper::script_controller::connect();
+
+        for stream in server.incoming() {
+            spawn(move || {
+                let callback = |req: &Request, response: Response| {
+                    println!("Received a new ws handshake");
+                    println!("The request's path is: {}", req.uri().path());
+                    println!("The request's headers are:");
+                    for (ref header, _value) in req.headers() {
+                        println!("* {}", header);
+                    }
+
+                    Ok(response)
+                };
+                let mut websocket = accept_hdr(stream.unwrap(), callback).unwrap();
+
+                loop {
+                    let msg = websocket.read_message().unwrap();
+                    if msg.is_binary() || msg.is_text() {
+                        websocket.write_message(msg).unwrap();
+                    }
+                }
+            });
+        }
+    });
+
     rocket::ignite()
         .mount("/", StaticFiles::from("static"))
         .mount("/", routes![index, demo, pause, demo_pause, unpause, demo_unpause, send])
