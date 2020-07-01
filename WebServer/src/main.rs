@@ -11,13 +11,16 @@ use rocket_contrib::serve::StaticFiles;
 
 use askama::Template;
 
-use tungstenite::accept_hdr;
-use tungstenite::handshake::server::{Request, Response};
+use serde_json::json;
+
+use tungstenite::Message::Text;
+use tungstenite::server::accept;
 
 use std::result::Result;
 use std::collections::HashMap;
 use std::net::TcpListener;
-use std::thread::spawn;
+use std::thread::{spawn, sleep};
+use std::time;
 
 #[derive(Template)]
 #[template(path = "demo.html")]
@@ -74,33 +77,7 @@ fn demo_unpause() -> Redirect {
 fn index() -> HomeTemplate {
     let is_running = helper::script_controller::is_running();
 
-    let mut action = "";
-    let mut icon_name = "";
-    if is_running {
-        let socket = helper::script_controller::connect();
-
-        match helper::script_controller::get_state(&socket) {
-            Ok(value) => {
-                match value.get("paused") {
-                    Some(paused) => {
-                        if paused == "false" {
-                            action = "pause";
-                            icon_name = "pause";
-                        } else {
-                            action = "unpause";
-                            icon_name = "play";
-                        }
-                    },
-                    None => {}
-                }
-                
-            },
-            Err(_) => println!("Error retreiving state of controller...")
-        }
-    } else {
-        icon_name = "x-circle";
-    }
-    
+    let (action, icon_name) = helper::script_controller::web::get_navbar_info();
     let cpu_temp = helper::raspberry::get_cpu_temp();
 
     HomeTemplate {
@@ -115,32 +92,12 @@ fn index() -> HomeTemplate {
 fn demo() -> DemoTemplate {
     let is_running = helper::script_controller::is_running();
 
-    let mut action = "";
-    let mut icon_name = "";
+    let (action, icon_name) = helper::script_controller::web::get_navbar_info();
     let mut settings_sliders = Vec::<helper::script_controller::Slider>::new();
     let mut settings_others = Vec::<helper::script_controller::Variable>::new();
 
     if is_running {
         let socket = helper::script_controller::connect();
-
-        match helper::script_controller::get_state(&socket) {
-            Ok(value) => {
-                match value.get("paused") {
-                    Some(paused) => {
-                        if paused == "false" {
-                            action = "pause";
-                            icon_name = "pause";
-                        } else {
-                            action = "unpause";
-                            icon_name = "play";
-                        }
-                    },
-                    None => {}
-                }
-                
-            },
-            Err(_) => println!("Error retreiving state of controller...")
-        }
 
         match helper::script_controller::get_settings(&socket) {
             Ok((sliders, others)) => {
@@ -149,8 +106,6 @@ fn demo() -> DemoTemplate {
             },
             Err(_) => println!("Error retreiving demo settings of controller...")
         }
-    } else {
-        icon_name = "x-circle";
     }
 
     DemoTemplate {
@@ -206,27 +161,51 @@ fn send(form: Form<Item>) -> Redirect{
 fn rocket() -> rocket::Rocket {
     spawn(move || {
         let server = TcpListener::bind("0.0.0.0:3012").unwrap();
-        let socket = helper::script_controller::connect();
 
         for stream in server.incoming() {
             spawn(move || {
-                let callback = |req: &Request, response: Response| {
-                    println!("Received a new ws handshake");
-                    println!("The request's path is: {}", req.uri().path());
-                    println!("The request's headers are:");
-                    for (ref header, _value) in req.headers() {
-                        println!("* {}", header);
-                    }
+                let mut websocket = accept(stream.unwrap()).unwrap();
+                let page = websocket.read_message().unwrap();
 
-                    Ok(response)
-                };
-                let mut websocket = accept_hdr(stream.unwrap(), callback).unwrap();
-
+                let mut is_pyscript_running_old = false;
+                let mut is_pyscript_running;
                 loop {
-                    let msg = websocket.read_message().unwrap();
-                    if msg.is_binary() || msg.is_text() {
-                        websocket.write_message(msg).unwrap();
+                    is_pyscript_running = helper::script_controller::is_running();
+                    if is_pyscript_running != is_pyscript_running_old {
+                        if is_pyscript_running {
+                            websocket.write_message(Text("Python controller is online.".to_string())).unwrap()
+                        } else {
+                            websocket.write_message(Text("Python controller is offline.".to_string())).unwrap()
+                        }
                     }
+
+                    let (action, icon_name) = helper::script_controller::web::get_navbar_info();
+                    let data;
+                    if page.to_text().unwrap() == "index" {
+                        data = json!({
+                            "is_pyscript_running": is_pyscript_running,
+                            "navbar": json!({
+                                "action": action,
+                                "icon_name": icon_name,
+                            }),
+                        });
+                    } else {
+                        data = json!({
+                            "is_pyscript_running": is_pyscript_running,
+                            "navbar": json!({
+                                "action": action,
+                                "icon_name": icon_name,
+                            }),
+                        });
+                    }
+
+                    match serde_json::to_string(&data) {
+                        Ok(value) => websocket.write_message(Text(value)).unwrap(),
+                        Err(_) => {}
+                    }
+
+                    sleep(time::Duration::from_millis(2000));
+                    is_pyscript_running_old = is_pyscript_running;
                 }
             });
         }

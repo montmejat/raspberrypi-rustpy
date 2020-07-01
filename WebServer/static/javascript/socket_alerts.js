@@ -14,16 +14,12 @@ function create_alert(alert_type, title, content) {
     document.getElementById('notifications').appendChild(div);
 }
 
-$(document).ready(function() {
-    let socket = new WebSocket("ws://192.168.0.26:3012/socket");
+function create_socket_connection(request) {
+    let socket = new WebSocket("ws://192.168.0.26:3012/" + request);
 
     socket.onopen = function(e) {
-        create_alert("success", "Connection established", "Sending 'i'm here'");
-        socket.send("i'm here");
-    };
-
-    socket.onmessage = function(event) {
-        create_alert("primary", "New message", `Data received from server: ${event.data}`);
+        create_alert("success", "Connection established", "New messages will be shown here.");
+        socket.send(request);
     };
 
     socket.onclose = function(event) {
@@ -39,4 +35,6 @@ $(document).ready(function() {
     socket.onerror = function(error) {
         create_alert("danger", "Error", `${error.message}`);
     };
-});
+
+    return socket;
+}

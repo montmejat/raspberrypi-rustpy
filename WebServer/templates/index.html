@@ -7,10 +7,38 @@
 <script src="bootstrap-4.3.1-dist/js/bootstrap.min.js"></script>
 <link rel="stylesheet" href="bootstrap-4.3.1-dist/css/bootstrap.min.css">
 
+<script>
+    $(document).ready(function() {
+        socket = create_socket_connection("index");
+
+        socket.onmessage = function(event) {
+            try {
+                data = JSON.parse(event.data);
+                
+                document.getElementById("action_link").href = `http://192.168.0.26:8000/${data.navbar.action}`;
+                document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/${data.navbar.icon_name}.svg`;
+
+                is_pyscript_running_icon = document.getElementById("is_pyscript_running_icon");
+                if (data.is_pyscript_running) {
+                    is_pyscript_running_icon.src = "bootstrap-icons-1.0.0-alpha4/circle-fill-green.svg";
+                } else {
+                    is_pyscript_running_icon.src = "bootstrap-icons-1.0.0-alpha4/circle-fill-red.svg";
+                }
+            } catch(e) {
+                create_alert("primary", "New message", `${event.data}`);
+            }
+        };
+
+        document.getElementById('action_link').onclick = function() {
+            alert("test");
+        }
+    });
+</script>
+
 <nav class="navbar navbar-light bg-light mb-3">
     <div class="container">
         <div class="text-left">
-            <a {% if is_running -%} href="http://192.168.0.26:8000/{{action}}" {% endif -%}><img src="bootstrap-icons-1.0.0-alpha4/{{icon_name}}.svg" alt="" width="32" height="32"></a>
+            <a id="action_link" {% if is_running -%} href="http://192.168.0.26:8000/{{action}}" {% endif -%}><img id="icon_name" src="bootstrap-icons-1.0.0-alpha4/{{icon_name}}.svg" alt="" width="32" height="32"></a>
         </div>
 
         <div class="text-center">
@@ -24,7 +52,7 @@
     </div>
 </nav>
 
-<div id="notifications" class="container"></div>
+<div id="notifications" style="max-height: 300px; overflow: auto" class="container"></div>
 
 <div class="container">
     <div class="jumbotron">
@@ -37,10 +65,11 @@
                 <div class="row">
                     <div>Python Controller
                         {% if is_running -%}
-                            <img src="bootstrap-icons-1.0.0-alpha4/circle-fill-green.svg" alt="" width="12" height="12">
+                            <img id="is_pyscript_running_icon" src="bootstrap-icons-1.0.0-alpha4/circle-fill-green.svg" alt="" width="12" height="12">
                         {% else -%}
-                            <img src="bootstrap-icons-1.0.0-alpha4/circle-fill-red.svg" alt="" width="12" height="12">
-                        {% endif -%}</div>
+                            <img id="is_pyscript_running_icon" src="bootstrap-icons-1.0.0-alpha4/circle-fill-red.svg" alt="" width="12" height="12">
+                        {% endif -%}
+                    </div>
                 </div>
             </div>
         </p>

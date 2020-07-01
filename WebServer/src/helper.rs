@@ -110,4 +110,41 @@ pub mod script_controller {
         data.insert("value", "unpause");
         send_message(&socket, data);
     }
+
+    pub mod web {
+        use crate::helper::script_controller;
+
+        pub fn get_navbar_info() -> (String, String) {
+            let mut action = "";
+            let mut icon_name = "x-circle";
+            
+            if script_controller::is_running() {
+                let socket = script_controller::connect();
+
+                match script_controller::get_state(&socket) {
+                    Ok(value) => {
+                        match value.get("paused") {
+                            Some(paused) => {
+                                if paused == "false" {
+                                    action = "pause";
+                                    icon_name = "pause";
+                                } else {
+                                    action = "unpause";
+                                    icon_name = "play";
+                                }
+                            },
+                            None => {}
+                        }
+                        
+                    },
+                    Err(_) => println!("Error retreiving state of controller...")
+                }
+            } else {
+                action = "";
+                icon_name = "x-circle";
+            }
+
+            (action.to_string(), icon_name.to_string())
+        }
+    }
 }
