@@ -5,9 +5,11 @@ extern crate rocket_contrib;
 
 mod helper;
 
+use rocket::State;
 use rocket::response::Redirect;
 use rocket::request::{FromForm, FormItems, Form};
 use rocket_contrib::serve::StaticFiles;
+use rocket::http::Cookies;
 
 use askama::Template;
 
@@ -21,6 +23,11 @@ use std::collections::HashMap;
 use std::net::TcpListener;
 use std::thread::{spawn, sleep};
 use std::time;
+use std::sync::Mutex;
+
+struct ServerState {
+    logged_in_user: Mutex<Option<String>>,
+}
 
 #[derive(Template)]
 #[template(path = "demo.html")]
@@ -35,10 +42,17 @@ struct DemoTemplate {
 #[derive(Template)]
 #[template(path = "index.html")]
 struct HomeTemplate {
+    logged_in: bool,
     action: String,
     icon_name: String,
     cpu_temp: String,
     is_running: bool,
+}
+
+#[derive(Template)]
+#[template(path = "login.html")]
+struct LoginTemplate {
+    any_user_online: bool,
 }
 
 #[get("/pause")]
@@ -74,17 +88,31 @@ fn demo_unpause() -> Redirect {
 }
 
 #[get("/")]
-fn index() -> HomeTemplate {
+fn index(mut cookies: Cookies) -> HomeTemplate {
     let is_running = helper::script_controller::is_running();
 
     let (action, icon_name) = helper::script_controller::web::get_navbar_info();
     let cpu_temp = helper::raspberry::get_cpu_temp();
 
-    HomeTemplate {
-        action: action.to_string(),
-        icon_name: icon_name.to_string(),
-        cpu_temp: cpu_temp.to_string(),
-        is_running: is_running,
+    match cookies.get_private("username") {
+        Some(_) => {
+            HomeTemplate {
+                logged_in: true,
+                action: action.to_string(),
+                icon_name: icon_name.to_string(),
+                cpu_temp: cpu_temp.to_string(),
+                is_running: is_running,
+            }
+        },
+        None => {
+            HomeTemplate {
+                logged_in: false,
+                action: action.to_string(),
+                icon_name: icon_name.to_string(),
+                cpu_temp: cpu_temp.to_string(),
+                is_running: is_running,
+            }
+        }
     }
 }
 
@@ -115,6 +143,35 @@ fn demo() -> DemoTemplate {
         settings_others: settings_others,
         is_running: is_running,
     }
+}
+
+#[get("/login")]
+fn login(state: State<ServerState>) -> LoginTemplate {
+    match *state.logged_in_user.lock().unwrap() {
+        Some(_) => {
+            LoginTemplate {
+                any_user_online: true,
+            }
+        },
+        None => {
+            LoginTemplate {
+                any_user_online: false,
+            }
+        }
+    }    
+}
+
+#[derive(FromForm)]
+struct UserLogin {
+    username: String,
+    password: String,
+}
+
+#[post("/try_login", data = "<user_form>")]
+fn login_form(user_form: Form<UserLogin>, state: State<ServerState>) -> Redirect {
+    let mut user = state.logged_in_user.lock().unwrap();
+    *user = Some(user_form.username.clone());
+    Redirect::to("/")
 }
 
 struct Item {
@@ -169,6 +226,8 @@ fn rocket() -> rocket::Rocket {
 
                 let mut is_pyscript_running_old = false;
                 let mut is_pyscript_running;
+
+                let mut data;
                 loop {
                     is_pyscript_running = helper::script_controller::is_running();
                     if is_pyscript_running != is_pyscript_running_old {
@@ -180,9 +239,11 @@ fn rocket() -> rocket::Rocket {
                     }
 
                     let (action, icon_name) = helper::script_controller::web::get_navbar_info();
-                    let data;
                     if page.to_text().unwrap() == "index" {
+                        let cpu_temp = helper::raspberry::get_cpu_temp();
+
                         data = json!({
+                            "cpu_temp": cpu_temp,
                             "is_pyscript_running": is_pyscript_running,
                             "navbar": json!({
                                 "action": action,
@@ -211,9 +272,14 @@ fn rocket() -> rocket::Rocket {
         }
     });
 
+    let server_state = ServerState {
+        logged_in_user: Mutex::new(None),
+    };
+
     rocket::ignite()
         .mount("/", StaticFiles::from("static"))
-        .mount("/", routes![index, demo, pause, demo_pause, unpause, demo_unpause, send])
+        .mount("/", routes![index, demo, pause, demo_pause, unpause, demo_unpause, send, login, login_form])
+        .manage(server_state)
 }
 
 fn main() {

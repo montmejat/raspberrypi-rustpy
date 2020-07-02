@@ -1,0 +1,29 @@
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<script>
+    function update_cookie() {
+        document.cookie = `username=${document.getElementById('username').value}`;
+    }
+</script>
+
+<link rel="stylesheet" href="bootstrap-4.3.1-dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="css/signin.css">
+
+<form class="form-signin text-center" action="/try_login" method="post">
+    <h1 class="h3 mb-3 font-weight-normal">Please sign in 🚀</h1>
+    
+    {% if any_user_online -%}
+        <div class="alert alert-warning">A user is connected</div>
+    {% else -%}
+        <div class="alert alert-success">No users connected</div>
+    {% endif -%}
+
+    <label for="username" class="sr-only">Login</label>
+    <input type="text" id="username" name="username" class="form-control" placeholder="Username" required="" autofocus="">
+    <label for="password" class="sr-only">Password</label>
+    <input type="password" id="password" name="password" class="form-control" placeholder="Password" required="">
+
+    <button class="btn btn-lg btn-primary btn-block" type="submit" onclick="update_cookie" {% if any_user_online -%} disabled {% endif -%}>Sign in</button>
+</form>
