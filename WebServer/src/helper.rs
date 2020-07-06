@@ -19,6 +19,7 @@ pub mod script_controller {
     use std::process::Command;
     use std::str::from_utf8;
 
+    #[derive(Debug)]
     pub struct Slider {
         pub name: String,
         pub min: u32,
@@ -26,6 +27,7 @@ pub mod script_controller {
         pub value: u32,
     }
 
+    #[derive(Debug)]
     pub struct Variable {
         pub name: String,
         pub value: String,

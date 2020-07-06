@@ -11,13 +11,13 @@
 <link rel="stylesheet" href="bootstrap-4.3.1-dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="css/signin.css">
 
-<form class="form-signin text-center" action="/try_login" method="post">
+<form class="form-signin text-center" action="/try_login" method="post" onsubmit="update_cookie()">
     <h1 class="h3 mb-3 font-weight-normal">Please sign in 🚀</h1>
     
     {% if any_user_online -%}
-        <div class="alert alert-warning">A user is connected</div>
+        <div class="alert alert-warning">A user is connected.</div>
     {% else -%}
-        <div class="alert alert-success">No users connected</div>
+        <div class="alert alert-success">No users connected.</div>
     {% endif -%}
 
     <label for="username" class="sr-only">Login</label>
@@ -25,5 +25,5 @@
     <label for="password" class="sr-only">Password</label>
     <input type="password" id="password" name="password" class="form-control" placeholder="Password" required="">
 
-    <button class="btn btn-lg btn-primary btn-block" type="submit" onclick="update_cookie" {% if any_user_online -%} disabled {% endif -%}>Sign in</button>
+    <button class="btn btn-lg btn-primary btn-block" type="submit" {% if any_user_online -%} disabled {% endif -%}>Sign in</button>
 </form>

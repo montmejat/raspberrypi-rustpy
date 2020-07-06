@@ -7,39 +7,36 @@
 <script src="bootstrap-4.3.1-dist/js/bootstrap.min.js"></script>
 <link rel="stylesheet" href="bootstrap-4.3.1-dist/css/bootstrap.min.css">
 
-<script>
-    $(document).ready(function() {
-        socket = create_socket_connection("index");
-
-        socket.onmessage = function(event) {
-            try {
-                data = JSON.parse(event.data);
-                
-                document.getElementById("action_link").href = `http://192.168.0.26:8000/${data.navbar.action}`;
-                document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/${data.navbar.icon_name}.svg`;
-                document.getElementById("cpu_temp").innerText = `CPU ${data.cpu_temp}`;
-
-                is_pyscript_running_icon = document.getElementById("is_pyscript_running_icon");
-                if (data.is_pyscript_running) {
-                    is_pyscript_running_icon.src = "bootstrap-icons-1.0.0-alpha4/circle-fill-green.svg";
-                } else {
-                    is_pyscript_running_icon.src = "bootstrap-icons-1.0.0-alpha4/circle-fill-red.svg";
-                }
-            } catch(e) {
-                create_alert("primary", "New message", `${event.data}`);
-            }
-        };
-
-        // document.getElementById('action_link').onclick = function() {
-        //     // alert("test");
-        // }
-    });
-</script>
-
 {% if logged_in -%}
+    <script>
+        $(document).ready(function() {
+            socket = create_socket_connection("index");
+
+            socket.onmessage = function(event) {
+                try {
+                    data = JSON.parse(event.data);
+                    
+                    document.getElementById("action_link").href = `http://192.168.0.26:8000/${data.navbar.action}`;
+                    document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/${data.navbar.icon_name}.svg`;
+                    document.getElementById("cpu_temp").innerText = `CPU ${data.cpu_temp}`;
+
+                    is_pyscript_running_icon = document.getElementById("is_pyscript_running_icon");
+                    if (data.is_pyscript_running) {
+                        is_pyscript_running_icon.src = "bootstrap-icons-1.0.0-alpha4/circle-fill-green.svg";
+                    } else {
+                        is_pyscript_running_icon.src = "bootstrap-icons-1.0.0-alpha4/circle-fill-red.svg";
+                    }
+                } catch(e) {
+                    create_alert("primary", "New message", `${event.data}`);
+                }
+            };
+        });
+    </script>
+
     <nav class="navbar navbar-light bg-light mb-3">
         <div class="container">
             <div class="text-left">
+                <a href="/logout"><img src="bootstrap-icons-1.0.0-alpha4/door-open.svg" alt="" width="32" height="32"></a>
                 <a id="action_link" {% if is_running -%} href="http://192.168.0.26:8000/{{action}}" {% endif -%}><img id="icon_name" src="bootstrap-icons-1.0.0-alpha4/{{icon_name}}.svg" alt="" width="32" height="32"></a>
             </div>
 
@@ -48,8 +45,8 @@
             </div>
 
             <div class="form-inline">
-                <a href="http://192.168.0.26:8000/demo"><img src="bootstrap-icons-1.0.0-alpha4/arrow-left.svg" alt="" width="32" height="32" title="Left cycle"></a>
-                <a href="http://192.168.0.26:8000/demo"><img src="bootstrap-icons-1.0.0-alpha4/arrow-right.svg" alt="" width="32" height="32" title="Right cycle"></a>
+                <a href="/demo"><img src="bootstrap-icons-1.0.0-alpha4/arrow-left.svg" alt="" width="32" height="32" title="Left cycle"></a>
+                <a href="/demo"><img src="bootstrap-icons-1.0.0-alpha4/arrow-right.svg" alt="" width="32" height="32" title="Right cycle"></a>
             </div>
         </div>
     </nav>
@@ -80,7 +77,7 @@
 {% else %}
     <div class="container">
         <div class="alert alert-warning mt-4">
-            You need to <a href="192.168.0.26/login">log in</a> to access this page.
+            You need to <a href="/login">log in</a> to access this page.
         </div>
     </div>
 {% endif %}
