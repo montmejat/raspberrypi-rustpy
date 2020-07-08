@@ -150,3 +150,112 @@ pub mod script_controller {
         }
     }
 }
+
+pub mod websocket {
+    use crate::helper;
+
+    use futures_util::future::{select, Either};
+    use futures_util::{SinkExt, StreamExt};
+    use std::net::SocketAddr;
+    use std::time::Duration;
+    use tokio::net::TcpStream;
+    use tokio_tungstenite::{accept_async, tungstenite::Error};
+    use tungstenite::{Message, Result};
+    use serde_json::json;
+
+    pub async fn accept_connection(peer: SocketAddr, stream: TcpStream) {
+        if let Err(e) = handle_connection(peer, stream).await {
+            match e {
+                Error::ConnectionClosed | Error::Protocol(_) | Error::Utf8 => (),
+                err => println!("Error processing connection: {}", err),
+            }
+        }
+    }
+    
+    /// Echo incoming WebSocket messages and send a message periodically every second.
+    pub async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
+        let ws_stream = accept_async(stream).await.expect("Failed to accept");
+        println!("[WEBSOCKET] New WebSocket connection: {}", peer);
+        let (mut ws_sender, mut ws_receiver) = ws_stream.split();
+        let mut interval = tokio::time::interval(Duration::from_millis(2000));
+
+        let mut msg_fut = ws_receiver.next();
+        let mut tick_fut = interval.next();
+        
+        let mut is_pyscript_running_old = false;
+        let mut is_pyscript_running;
+        let mut data;
+        let mut page = None;
+
+        loop {
+            match select(msg_fut, tick_fut).await {
+                Either::Left((msg, tick_fut_continue)) => {
+                    match msg {
+                        Some(msg) => {
+                            let msg = msg?;
+                            if msg.is_text() {
+                                // ws_sender.send(msg).await?;
+                                page = Some(msg.to_text().unwrap().to_string());
+                            }
+
+                            tick_fut = tick_fut_continue; // Continue waiting for tick.
+                            msg_fut = ws_receiver.next(); // Receive next WebSocket message.
+                        }
+                        None => break, // WebSocket stream terminated.
+                    };
+                }
+                Either::Right((_, msg_fut_continue)) => {
+                    is_pyscript_running = helper::script_controller::is_running();
+
+                    if is_pyscript_running != is_pyscript_running_old {
+                        if is_pyscript_running {
+                            ws_sender.send(Message::Text("Python controller is online.".to_owned())).await?
+                        } else {
+                            ws_sender.send(Message::Text("Python controller is offline.".to_owned())).await?
+                        }
+                    }
+
+                    match page {
+                        Some(ref value) => {
+                            let (action, icon_name) = helper::script_controller::web::get_navbar_info();
+                            if value == "index" {
+                                let cpu_temp = helper::raspberry::get_cpu_temp();
+        
+                                data = json!({
+                                    "cpu_temp": cpu_temp,
+                                    "is_pyscript_running": is_pyscript_running,
+                                    "navbar": json!({
+                                        "action": action,
+                                        "icon_name": icon_name,
+                                    }),
+                                });
+                            } else {
+                                data = json!({
+                                    "is_pyscript_running": is_pyscript_running,
+                                    "navbar": json!({
+                                        "action": action,
+                                        "icon_name": icon_name,
+                                    }),
+                                });
+                            }
+                        },
+                        None => {
+                            data = json!({});
+                        }
+                    }
+
+                    match serde_json::to_string(&data) {
+                        Ok(value) => ws_sender.send(Message::Text(value.to_owned())).await?,
+                        Err(_) => {}
+                    }
+
+                    is_pyscript_running_old = is_pyscript_running;
+                    msg_fut = msg_fut_continue; // Continue receiving the WebSocket message.
+                    tick_fut = interval.next(); // Wait for next tick.
+                }
+            }
+        }
+    
+        Ok(())
+    }
+}

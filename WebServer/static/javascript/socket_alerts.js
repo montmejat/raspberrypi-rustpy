@@ -14,8 +14,8 @@ function create_alert(alert_type, title, content) {
     document.getElementById('notifications').appendChild(div);
 }
 
-function create_socket_connection(request) {
-    let socket = new WebSocket("ws://192.168.0.26:3012/" + request);
+function create_socket_connection(ip, port, request) {
+    let socket = new WebSocket(`ws://${ip}:${port}/${request}`);
 
     socket.onopen = function(e) {
         create_alert("success", "Connection established", "New messages will be shown here.");

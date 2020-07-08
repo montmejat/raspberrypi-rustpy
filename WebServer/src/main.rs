@@ -13,16 +13,10 @@ use rocket_contrib::serve::StaticFiles;
 
 use askama::Template;
 
-use serde_json::json;
-
-use tungstenite::Message::Text;
-use tungstenite::server::accept;
+use tokio::net::TcpListener;
 
 use std::result::Result;
 use std::collections::HashMap;
-use std::net::TcpListener;
-use std::thread::{spawn, sleep};
-use std::time;
 use std::sync::Mutex;
 
 struct ServerState {
@@ -59,7 +53,12 @@ struct LoginTemplate {
 #[derive(Template)]
 #[template(path = "maintenance.html")]
 struct MaintenanceTemplate {
-
+    logged_in: bool,
+    action: String,
+    icon_name: String,
+    settings_sliders: Vec<helper::script_controller::Slider>,
+    settings_others: Vec<helper::script_controller::Variable>,
+    is_running: bool,
 }
 
 #[get("/pause")]
@@ -171,8 +170,6 @@ fn demo(mut cookies: Cookies, state: State<ServerState>) -> DemoTemplate {
         None => {}
     }
 
-    println!("settings: {:?} {:?}", settings_sliders, settings_others);
-
     DemoTemplate {
         logged_in: false,
         action: action.to_string(),
@@ -184,9 +181,43 @@ fn demo(mut cookies: Cookies, state: State<ServerState>) -> DemoTemplate {
 }
 
 #[get("/maintenance")]
-fn maintenance() -> MaintenanceTemplate {
+fn maintenance(mut cookies: Cookies, state: State<ServerState>) -> MaintenanceTemplate {
+    let is_running = helper::script_controller::is_running();
+
+    let (action, icon_name) = helper::script_controller::web::get_navbar_info();
+    let settings_sliders = Vec::<helper::script_controller::Slider>::new();
+    let settings_others = Vec::<helper::script_controller::Variable>::new();
+
+    // TODO : get the maintenance settings
+
+    match cookies.get_private("username") {
+        Some(username) => {
+            match &*state.logged_in_user.lock().unwrap() {
+                Some(logged_user) => {
+                    if logged_user == username.value() {
+                        return MaintenanceTemplate {
+                            logged_in: true,
+                            action: action.to_string(),
+                            icon_name: icon_name.to_string(),
+                            settings_sliders: settings_sliders,
+                            settings_others: settings_others,
+                            is_running: is_running,
+                        }
+                    }
+                },
+                None => {}
+            }
+        },
+        None => {}
+    }
+
     MaintenanceTemplate {
-        
+        logged_in: false,
+        action: action.to_string(),
+        icon_name: icon_name.to_string(),
+        settings_sliders: settings_sliders,
+        settings_others: settings_others,
+        is_running: is_running,
     }
 }
 
@@ -263,61 +294,64 @@ fn send(form: Form<Item>) -> Redirect{
 }
 
 fn rocket() -> rocket::Rocket {
-    spawn(move || {
-        let server = TcpListener::bind("0.0.0.0:3012").unwrap();
+    // spawn(move || {
+    //     let stream = TcpListener::bind("0.0.0.0:3012").unwrap();
 
-        for stream in server.incoming() {
-            spawn(move || {
-                let mut websocket = accept(stream.unwrap()).unwrap();
-                let page = websocket.read_message().unwrap();
+    //     for stream in stream.incoming() {
+    //         let ws_stream = accept_async(stream).await.expect("Failed to accept");
+    //         let (mut ws_sender, mut ws_receiver) = ws_stream.split();
 
-                let mut is_pyscript_running_old = false;
-                let mut is_pyscript_running;
+    //         let page = "";
 
-                let mut data;
-                loop {
-                    is_pyscript_running = helper::script_controller::is_running();
-                    if is_pyscript_running != is_pyscript_running_old {
-                        if is_pyscript_running {
-                            websocket.write_message(Text("Python controller is online.".to_string())).unwrap()
-                        } else {
-                            websocket.write_message(Text("Python controller is offline.".to_string())).unwrap()
-                        }
-                    }
+    //         spawn(move || {
+    //             let mut is_pyscript_running_old = false;
+    //             let mut is_pyscript_running;
+    //             let mut data;
 
-                    let (action, icon_name) = helper::script_controller::web::get_navbar_info();
-                    if page.to_text().unwrap() == "index" {
-                        let cpu_temp = helper::raspberry::get_cpu_temp();
+    //             loop {
 
-                        data = json!({
-                            "cpu_temp": cpu_temp,
-                            "is_pyscript_running": is_pyscript_running,
-                            "navbar": json!({
-                                "action": action,
-                                "icon_name": icon_name,
-                            }),
-                        });
-                    } else {
-                        data = json!({
-                            "is_pyscript_running": is_pyscript_running,
-                            "navbar": json!({
-                                "action": action,
-                                "icon_name": icon_name,
-                            }),
-                        });
-                    }
+    //                 is_pyscript_running = helper::script_controller::is_running();
+    //                 if is_pyscript_running != is_pyscript_running_old {
+    //                     if is_pyscript_running {
+    //                         ws_sender.write_message(Text("Python controller is online.".to_string())).unwrap()
+    //                     } else {
+    //                         ws_sender.write_message(Text("Python controller is offline.".to_string())).unwrap()
+    //                     }
+    //                 }
 
-                    match serde_json::to_string(&data) {
-                        Ok(value) => websocket.write_message(Text(value)).unwrap(),
-                        Err(_) => {}
-                    }
+    //                 let (action, icon_name) = helper::script_controller::web::get_navbar_info();
+    //                 if page.to_text().unwrap() == "index" {
+    //                     let cpu_temp = helper::raspberry::get_cpu_temp();
 
-                    sleep(time::Duration::from_millis(2000));
-                    is_pyscript_running_old = is_pyscript_running;
-                }
-            });
-        }
-    });
+    //                     data = json!({
+    //                         "cpu_temp": cpu_temp,
+    //                         "is_pyscript_running": is_pyscript_running,
+    //                         "navbar": json!({
+    //                             "action": action,
+    //                             "icon_name": icon_name,
+    //                         }),
+    //                     });
+    //                 } else {
+    //                     data = json!({
+    //                         "is_pyscript_running": is_pyscript_running,
+    //                         "navbar": json!({
+    //                             "action": action,
+    //                             "icon_name": icon_name,
+    //                         }),
+    //                     });
+    //                 }
+
+    //                 match serde_json::to_string(&data) {
+    //                     Ok(value) => websocket.write_message(Text(value)).unwrap(),
+    //                     Err(_) => {}
+    //                 }
+
+    //                 sleep(time::Duration::from_millis(2000));
+    //                 is_pyscript_running_old = is_pyscript_running;
+    //             }
+    //         });
+    //     }
+    // });
 
     let server_state = ServerState {
         logged_in_user: Mutex::new(None),
@@ -325,10 +359,23 @@ fn rocket() -> rocket::Rocket {
 
     rocket::ignite()
         .mount("/", StaticFiles::from("static"))
-        .mount("/", routes![index, demo, pause, demo_pause, unpause, demo_unpause, send, login, login_form])
+        .mount("/", routes![index, demo, maintenance, pause, demo_pause, unpause, demo_unpause, send, login, login_form])
         .manage(server_state)
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
+    tokio::spawn(async move {
+        let addr = "0.0.0.0:3012";
+        let mut listener = TcpListener::bind(&addr).await.expect("Can't listen");
+
+        while let Ok((stream, _)) = listener.accept().await {
+            let peer = stream
+                .peer_addr()
+                .expect("connected streams should have a peer address");
+            tokio::spawn(helper::websocket::accept_connection(peer, stream));
+        }
+    });
+    
     rocket().launch();
 }

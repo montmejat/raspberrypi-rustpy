@@ -11,7 +11,7 @@
 {% if logged_in -%}
     <script>
         $(document).ready(function() {
-            socket = create_socket_connection("demo");
+            socket = create_socket_connection("192.168.0.26", "3012", "demo");
 
             socket.onmessage = function(event) {
                 try {
@@ -38,7 +38,7 @@
     <nav class="navbar navbar-light bg-light mb-3">
         <div class="container">
             <div class="text-left">
-                <a href="http://192.168.0.26:8000/logout"><img src="bootstrap-icons-1.0.0-alpha4/door-open.svg" alt="" width="32" height="32"></a>
+                <a href="/logout"><img src="bootstrap-icons-1.0.0-alpha4/door-open.svg" alt="" width="32" height="32"></a>
                 <a id="action_link" {% if is_running -%} href="http://192.168.0.26:8000/{{action}}" {% endif -%}><img id="icon_name" src="bootstrap-icons-1.0.0-alpha4/{{icon_name}}.svg" alt="" width="32" height="32"></a>
             </div>
 
@@ -47,8 +47,8 @@
             </div>
 
             <div class="form-inline">
-                <a href="http://192.168.0.26:8000/"><img src="bootstrap-icons-1.0.0-alpha4/arrow-left.svg" alt="" width="32" height="32" title="Left cycle"></a>
-                <a href="http://192.168.0.26:8000/"><img src="bootstrap-icons-1.0.0-alpha4/arrow-right.svg" alt="" width="32" height="32" title="Right cycle"></a>
+                <a href="/"><img src="bootstrap-icons-1.0.0-alpha4/arrow-left.svg" alt="" width="32" height="32" title="Left cycle"></a>
+                <a href="/maintenance"><img src="bootstrap-icons-1.0.0-alpha4/arrow-right.svg" alt="" width="32" height="32" title="Right cycle"></a>
             </div>
         </div>
     </nav>
