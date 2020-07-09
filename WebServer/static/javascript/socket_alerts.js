@@ -38,3 +38,7 @@ function create_socket_connection(ip, port, request) {
 
     return socket;
 }
+
+function send_command(socket, command) {
+    socket.send(JSON.stringify({ "command": command }));
+}

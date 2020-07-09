@@ -16,7 +16,16 @@
                 try {
                     data = JSON.parse(event.data);
                     
-                    document.getElementById("action_link").href = `http://192.168.0.26:8000/${data.navbar.action}`;
+                    if (data.navbar.action != "") {
+                        document.getElementById('action_link').onclick = function() {
+                            send_command(socket, data.navbar.action);
+                            if (data.navbar.action == "pause") {
+                                document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/play.svg`;
+                            } else {
+                                document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/pause.svg`;
+                            }
+                        };
+                    }
                     document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/${data.navbar.icon_name}.svg`;
                     document.getElementById("cpu_temp").innerText = `CPU ${data.cpu_temp}`;
 
@@ -37,7 +46,7 @@
         <div class="container">
             <div class="text-left">
                 <a href="/logout"><img src="bootstrap-icons-1.0.0-alpha4/door-open.svg" alt="" width="32" height="32"></a>
-                <a id="action_link" {% if is_running -%} href="http://192.168.0.26:8000/{{action}}" {% endif -%}><img id="icon_name" src="bootstrap-icons-1.0.0-alpha4/{{icon_name}}.svg" alt="" width="32" height="32"></a>
+                <a id="action_link" href="#"><img id="icon_name" src="bootstrap-icons-1.0.0-alpha4/{{icon_name}}.svg" alt="" width="32" height="32"></a>
             </div>
 
             <div class="text-center">

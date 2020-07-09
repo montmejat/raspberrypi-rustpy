@@ -294,65 +294,6 @@ fn send(form: Form<Item>) -> Redirect{
 }
 
 fn rocket() -> rocket::Rocket {
-    // spawn(move || {
-    //     let stream = TcpListener::bind("0.0.0.0:3012").unwrap();
-
-    //     for stream in stream.incoming() {
-    //         let ws_stream = accept_async(stream).await.expect("Failed to accept");
-    //         let (mut ws_sender, mut ws_receiver) = ws_stream.split();
-
-    //         let page = "";
-
-    //         spawn(move || {
-    //             let mut is_pyscript_running_old = false;
-    //             let mut is_pyscript_running;
-    //             let mut data;
-
-    //             loop {
-
-    //                 is_pyscript_running = helper::script_controller::is_running();
-    //                 if is_pyscript_running != is_pyscript_running_old {
-    //                     if is_pyscript_running {
-    //                         ws_sender.write_message(Text("Python controller is online.".to_string())).unwrap()
-    //                     } else {
-    //                         ws_sender.write_message(Text("Python controller is offline.".to_string())).unwrap()
-    //                     }
-    //                 }
-
-    //                 let (action, icon_name) = helper::script_controller::web::get_navbar_info();
-    //                 if page.to_text().unwrap() == "index" {
-    //                     let cpu_temp = helper::raspberry::get_cpu_temp();
-
-    //                     data = json!({
-    //                         "cpu_temp": cpu_temp,
-    //                         "is_pyscript_running": is_pyscript_running,
-    //                         "navbar": json!({
-    //                             "action": action,
-    //                             "icon_name": icon_name,
-    //                         }),
-    //                     });
-    //                 } else {
-    //                     data = json!({
-    //                         "is_pyscript_running": is_pyscript_running,
-    //                         "navbar": json!({
-    //                             "action": action,
-    //                             "icon_name": icon_name,
-    //                         }),
-    //                     });
-    //                 }
-
-    //                 match serde_json::to_string(&data) {
-    //                     Ok(value) => websocket.write_message(Text(value)).unwrap(),
-    //                     Err(_) => {}
-    //                 }
-
-    //                 sleep(time::Duration::from_millis(2000));
-    //                 is_pyscript_running_old = is_pyscript_running;
-    //             }
-    //         });
-    //     }
-    // });
-
     let server_state = ServerState {
         logged_in_user: Mutex::new(None),
     };

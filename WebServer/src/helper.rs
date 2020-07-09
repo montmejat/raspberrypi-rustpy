@@ -161,7 +161,7 @@ pub mod websocket {
     use tokio::net::TcpStream;
     use tokio_tungstenite::{accept_async, tungstenite::Error};
     use tungstenite::{Message, Result};
-    use serde_json::json;
+    use serde_json::{json, Value};
 
     pub async fn accept_connection(peer: SocketAddr, stream: TcpStream) {
         if let Err(e) = handle_connection(peer, stream).await {
@@ -193,9 +193,25 @@ pub mod websocket {
                     match msg {
                         Some(msg) => {
                             let msg = msg?;
-                            if msg.is_text() {
-                                // ws_sender.send(msg).await?;
-                                page = Some(msg.to_text().unwrap().to_string());
+                            
+                            match serde_json::from_str::<Value>(&msg.to_text().unwrap()) {
+                                Ok(value) => {
+                                    match value["command"].to_string().as_str() {
+                                        "\"pause\"" => {
+                                            let socket = helper::script_controller::connect();
+                                            helper::script_controller::pause(&socket);
+                                        },
+                                        "\"unpause\"" => {
+                                            let socket = helper::script_controller::connect();
+                                            helper::script_controller::unpause(&socket);
+                                        },
+                                        _ => {}
+                                    }
+                                },
+                                Err(_) => {
+                                    page = Some(msg.to_text().unwrap().to_string());
+                                    println!("[WEBSOCKET] Connection opened at '{}'", msg.to_text().unwrap());
+                                },
                             }
 
                             tick_fut = tick_fut_continue; // Continue waiting for tick.
@@ -238,15 +254,13 @@ pub mod websocket {
                                     }),
                                 });
                             }
-                        },
-                        None => {
-                            data = json!({});
-                        }
-                    }
 
-                    match serde_json::to_string(&data) {
-                        Ok(value) => ws_sender.send(Message::Text(value.to_owned())).await?,
-                        Err(_) => {}
+                            match serde_json::to_string(&data) {
+                                Ok(value) => ws_sender.send(Message::Text(value.to_owned())).await?,
+                                Err(_) => {}
+                            }
+                        },
+                        None => {}
                     }
 
                     is_pyscript_running_old = is_pyscript_running;
