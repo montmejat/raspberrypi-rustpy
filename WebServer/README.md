@@ -9,4 +9,4 @@ Optionally, you can use the command `ROCKET_ENV=staging cargo run --release` for
 
 ![Interface Screenshot](doc/screenshot_desktop.png)
 
-You can use the app through the interface, to connect open a browser and type in `ip_raspberrypi:8000`.
+You can use the app through the interface. To connect open a browser and type in `ip_raspberrypi:8000` as the URL.
