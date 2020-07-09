@@ -45,6 +45,13 @@ struct HomeTemplate {
 }
 
 #[derive(Template)]
+#[template(path = "logout.html")]
+struct LogoutTemplate {
+    logged_in: bool,
+    username: String,
+}
+
+#[derive(Template)]
 #[template(path = "login.html")]
 struct LoginTemplate {
     any_user_online: bool,
@@ -59,38 +66,6 @@ struct MaintenanceTemplate {
     settings_sliders: Vec<helper::script_controller::Slider>,
     settings_others: Vec<helper::script_controller::Variable>,
     is_running: bool,
-}
-
-#[get("/pause")]
-fn pause() -> Redirect {
-    let socket = helper::script_controller::connect();
-    helper::script_controller::pause(&socket);
-    
-    Redirect::to("/")
-}
-
-#[get("/demo/pause")]
-fn demo_pause() -> Redirect {
-    let socket = helper::script_controller::connect();
-    helper::script_controller::pause(&socket);
-
-    Redirect::to("/demo")
-}
-
-#[get("/unpause")]
-fn unpause() -> Redirect {
-    let socket = helper::script_controller::connect();
-    helper::script_controller::unpause(&socket);
-    
-    Redirect::to("/")
-}
-
-#[get("/demo/unpause")]
-fn demo_unpause() -> Redirect {
-    let socket = helper::script_controller::connect();
-    helper::script_controller::unpause(&socket);
-    
-    Redirect::to("/demo")
 }
 
 #[get("/")]
@@ -252,6 +227,31 @@ fn login_form(mut cookies: Cookies, user_form: Form<UserLogin>, state: State<Ser
     Redirect::to("/")
 }
 
+#[get("/logout")]
+fn logout(mut cookies: Cookies, state: State<ServerState>) -> LogoutTemplate {
+    let mut user = state.logged_in_user.lock().unwrap();
+    *user = None;
+
+    match cookies.get_private("username") {
+        Some(username) => {
+            cookies.remove_private(Cookie::named("username"));
+            let mut name = username.to_string();
+            name.replace_range(0..9, "");
+
+            LogoutTemplate {
+                logged_in: true,
+                username: name,
+            }
+        },
+        None => {
+            LogoutTemplate {
+                logged_in: false,
+                username: "no name".to_string(),
+            }
+        }
+    }
+}
+
 struct Item {
     fields: HashMap<String, String>,
 }
@@ -300,7 +300,7 @@ fn rocket() -> rocket::Rocket {
 
     rocket::ignite()
         .mount("/", StaticFiles::from("static"))
-        .mount("/", routes![index, demo, maintenance, pause, demo_pause, unpause, demo_unpause, send, login, login_form])
+        .mount("/", routes![index, demo, maintenance, send, login, login_form, logout])
         .manage(server_state)
 }
 

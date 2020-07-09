@@ -1,0 +1,17 @@
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<link rel="stylesheet" href="bootstrap-4.3.1-dist/css/bootstrap.min.css">
+
+<div class="container">
+    {% if logged_in -%}
+        <div class="alert alert-primary mt-4">
+            <code>{{ username }}</code> logged out 🚀
+        </div>
+    {% else -%}
+        <div class="alert alert-warning mt-4">
+            You need to <a href="/login">log in</a> to logout.
+        </div>
+    {% endif -%}
+</div>
