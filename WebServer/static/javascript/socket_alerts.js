@@ -1,3 +1,7 @@
+function custom_on_message_call(data) {
+    // To define in HTML page
+}
+
 function create_alert(alert_type, title, content) {
     div = document.createElement('div');
     div.classList.add('alert');
@@ -20,6 +24,31 @@ function create_socket_connection(ip, port, request) {
     socket.onopen = function(e) {
         create_alert("success", "Connection established", "New messages will be shown here.");
         socket.send(request);
+    };
+
+    socket.onmessage = function(event) {
+        try {
+            data = JSON.parse(event.data);
+            
+            if (data.navbar.action != "") {
+                document.getElementById('action_link').onclick = function() {
+                    send_command(socket, data.navbar.action);
+                    if (data.navbar.action == "pause") {
+                        document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/play.svg`;
+                    } else {
+                        document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/pause.svg`;
+                    }
+                };
+                
+                document.getElementById("action_link").href = "#";
+            } else {
+                document.getElementById("action_link").removeAttribute("href");
+            }
+            
+            custom_on_message_call(event.data);
+        } catch(e) {
+            create_alert("primary", "New message", `${event.data}`);
+        }
     };
 
     socket.onclose = function(event) {

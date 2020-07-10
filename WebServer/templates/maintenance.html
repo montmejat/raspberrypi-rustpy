@@ -13,20 +13,10 @@
         $(document).ready(function() {
             socket = create_socket_connection("192.168.0.26", "3012", "maintenance");
 
-            socket.onmessage = function(event) {
+            custom_on_message_call = function(data) {
                 try {
-                    data = JSON.parse(event.data);
+                    data = JSON.parse(data);
                     
-                    if (data.navbar.action != "") {
-                        document.getElementById('action_link').onclick = function() {
-                            send_command(socket, data.navbar.action);
-                            if (data.navbar.action == "pause") {
-                                document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/play.svg`;
-                            } else {
-                                document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/pause.svg`;
-                            }
-                        };
-                    }
                     document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/${data.navbar.icon_name}.svg`;
 
                     server_paragraph = document.getElementById("server_off_message");
@@ -34,7 +24,7 @@
                         location.reload();
                     }
                 } catch(e) {
-                    create_alert("primary", "New message", `${event.data}`);
+                    create_alert("primary", "New message", `${data}`);
                 }
             };
         });
@@ -44,7 +34,7 @@
         <div class="container">
             <div class="text-left">
                 <a href="/logout"><img src="bootstrap-icons-1.0.0-alpha4/door-open.svg" alt="" width="32" height="32"></a>
-                <a id="action_link" href="#"><img id="icon_name" src="bootstrap-icons-1.0.0-alpha4/{{icon_name}}.svg" alt="" width="32" height="32"></a>
+                <a id="action_link"><img id="icon_name" src="bootstrap-icons-1.0.0-alpha4/{{icon_name}}.svg" alt="" width="32" height="32"></a>
             </div>
 
             <div class="text-center">
