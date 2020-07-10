@@ -28,6 +28,7 @@ def loop():
     sleep(1)
     led.off()
     sleep(1)
+    param.my_var += 1
     print("Ending loop in demo!")
 
 def end():
