@@ -14,6 +14,10 @@
         <div class="alert alert-success">No users connected.</div>
     {% endif -%}
 
+    {% if error -%}
+        <div class="alert alert-danger">WWRRROONG!!</div>
+    {% endif -%}
+
     <label for="username" class="sr-only">Login</label>
     <input type="text" id="username" name="username" class="form-control" placeholder="Username" required="" autofocus="">
     <label for="password" class="sr-only">Password</label>

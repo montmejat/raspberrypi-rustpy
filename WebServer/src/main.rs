@@ -27,7 +27,6 @@ struct ServerState {
 #[template(path = "demo.html")]
 struct DemoTemplate {
     logged_in: bool,
-    action: String,
     icon_name: String,
     settings_sliders: Vec<helper::script_controller::Slider>,
     settings_others: Vec<helper::script_controller::Variable>,
@@ -38,7 +37,6 @@ struct DemoTemplate {
 #[template(path = "index.html")]
 struct HomeTemplate {
     logged_in: bool,
-    action: String,
     icon_name: String,
     cpu_temp: String,
     is_running: bool,
@@ -55,13 +53,13 @@ struct LogoutTemplate {
 #[template(path = "login.html")]
 struct LoginTemplate {
     any_user_online: bool,
+    error: bool,
 }
 
 #[derive(Template)]
 #[template(path = "maintenance.html")]
 struct MaintenanceTemplate {
     logged_in: bool,
-    action: String,
     icon_name: String,
     settings_sliders: Vec<helper::script_controller::Slider>,
     settings_others: Vec<helper::script_controller::Variable>,
@@ -72,7 +70,7 @@ struct MaintenanceTemplate {
 fn index(mut cookies: Cookies, state: State<ServerState>) -> HomeTemplate {
     let is_running = helper::script_controller::is_running();
 
-    let (action, icon_name) = helper::script_controller::web::get_navbar_info();
+    let (_, icon_name) = helper::script_controller::web::get_navbar_info();
     let cpu_temp = helper::raspberry::get_cpu_temp();
 
     match cookies.get_private("username") {
@@ -82,7 +80,6 @@ fn index(mut cookies: Cookies, state: State<ServerState>) -> HomeTemplate {
                     if logged_user == username.value() {
                         return HomeTemplate {
                             logged_in: true,
-                            action: action.to_string(),
                             icon_name: icon_name.to_string(),
                             cpu_temp: cpu_temp.to_string(),
                             is_running: is_running,
@@ -97,7 +94,6 @@ fn index(mut cookies: Cookies, state: State<ServerState>) -> HomeTemplate {
 
     HomeTemplate {
         logged_in: false,
-        action: action.to_string(),
         icon_name: icon_name.to_string(),
         cpu_temp: cpu_temp.to_string(),
         is_running: is_running,
@@ -108,7 +104,7 @@ fn index(mut cookies: Cookies, state: State<ServerState>) -> HomeTemplate {
 fn demo(mut cookies: Cookies, state: State<ServerState>) -> DemoTemplate {
     let is_running = helper::script_controller::is_running();
 
-    let (action, icon_name) = helper::script_controller::web::get_navbar_info();
+    let (_, icon_name) = helper::script_controller::web::get_navbar_info();
     let mut settings_sliders = Vec::<helper::script_controller::Slider>::new();
     let mut settings_others = Vec::<helper::script_controller::Variable>::new();
 
@@ -131,7 +127,6 @@ fn demo(mut cookies: Cookies, state: State<ServerState>) -> DemoTemplate {
                     if logged_user == username.value() {
                         return DemoTemplate {
                             logged_in: true,
-                            action: action.to_string(),
                             icon_name: icon_name.to_string(),
                             settings_sliders: settings_sliders,
                             settings_others: settings_others,
@@ -147,7 +142,6 @@ fn demo(mut cookies: Cookies, state: State<ServerState>) -> DemoTemplate {
 
     DemoTemplate {
         logged_in: false,
-        action: action.to_string(),
         icon_name: icon_name.to_string(),
         settings_sliders: settings_sliders,
         settings_others: settings_others,
@@ -159,7 +153,7 @@ fn demo(mut cookies: Cookies, state: State<ServerState>) -> DemoTemplate {
 fn maintenance(mut cookies: Cookies, state: State<ServerState>) -> MaintenanceTemplate {
     let is_running = helper::script_controller::is_running();
 
-    let (action, icon_name) = helper::script_controller::web::get_navbar_info();
+    let (_, icon_name) = helper::script_controller::web::get_navbar_info();
     let settings_sliders = Vec::<helper::script_controller::Slider>::new();
     let settings_others = Vec::<helper::script_controller::Variable>::new();
 
@@ -172,7 +166,6 @@ fn maintenance(mut cookies: Cookies, state: State<ServerState>) -> MaintenanceTe
                     if logged_user == username.value() {
                         return MaintenanceTemplate {
                             logged_in: true,
-                            action: action.to_string(),
                             icon_name: icon_name.to_string(),
                             settings_sliders: settings_sliders,
                             settings_others: settings_others,
@@ -188,11 +181,28 @@ fn maintenance(mut cookies: Cookies, state: State<ServerState>) -> MaintenanceTe
 
     MaintenanceTemplate {
         logged_in: false,
-        action: action.to_string(),
         icon_name: icon_name.to_string(),
         settings_sliders: settings_sliders,
         settings_others: settings_others,
         is_running: is_running,
+    }
+}
+
+#[get("/login?<error>")]
+fn login_with_error(state: State<ServerState>, error: bool) -> LoginTemplate {
+    match *state.logged_in_user.lock().unwrap() {
+        Some(_) => {
+            LoginTemplate {
+                any_user_online: true,
+                error: error,
+            }
+        },
+        None => {
+            LoginTemplate {
+                any_user_online: false,
+                error: error,
+            }
+        }
     }
 }
 
@@ -202,11 +212,13 @@ fn login(state: State<ServerState>) -> LoginTemplate {
         Some(_) => {
             LoginTemplate {
                 any_user_online: true,
+                error: false,
             }
         },
         None => {
             LoginTemplate {
                 any_user_online: false,
+                error: false,
             }
         }
     }
@@ -220,9 +232,17 @@ struct UserLogin {
 
 #[post("/try_login", data = "<user_form>")]
 fn login_form(mut cookies: Cookies, user_form: Form<UserLogin>, state: State<ServerState>) -> Redirect {
-    let mut user = state.logged_in_user.lock().unwrap();
-    *user = Some(user_form.username.clone());
-    cookies.add_private(Cookie::new("username", user_form.username.clone()));
+    match helper::passwords::check_password(&user_form.username, &user_form.password) {
+        Ok(user_type) => {
+            println!("usertype: {}", user_type);
+            let mut user = state.logged_in_user.lock().unwrap();
+            *user = Some(user_form.username.clone());
+            cookies.add_private(Cookie::new("username", user_form.username.clone()));
+        },
+        Err(_) => {
+            return Redirect::to("/login?error=true");
+        }
+    }
 
     Redirect::to("/")
 }
@@ -300,7 +320,7 @@ fn rocket() -> rocket::Rocket {
 
     rocket::ignite()
         .mount("/", StaticFiles::from("static"))
-        .mount("/", routes![index, demo, maintenance, send, login, login_form, logout])
+        .mount("/", routes![index, demo, maintenance, send, login, login_with_error, login_form, logout])
         .manage(server_state)
 }
 

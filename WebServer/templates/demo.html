@@ -25,7 +25,11 @@
                             } else {
                                 document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/pause.svg`;
                             }
+
+                            document.getElementById("icon_name").href = "#";
                         };
+                    } else {
+                        document.getElementById("action_link").removeAttribute("href");
                     }
                     document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/${data.navbar.icon_name}.svg`;
 
@@ -68,10 +72,13 @@
                 {% if is_running -%}
                     {% for slider in settings_sliders %}
                         <div class="row pb-2">
-                            <div class="col-4">
+                            <div class="col-3">
                                 <b>{{ slider.name }}</b>
                             </div>
-                            <div class="col-8 pl-0" style="height: 25px; background: #e9ecef; display: flex; align-items: center;">
+                            <div id="{{ slider.name }}" class="col-2 col-form-label">
+                                {{ slider.value }}
+                            </div>
+                            <div class="col-7 pl-0" style="height: 25px; background: #e9ecef; display: flex; align-items: center;">
                                 <span class="badge badge-secondary">{{ slider.min }}</span>
                                 <input name="{{ slider.name }}" type="range" min="{{ slider.min }}" max="{{ slider.max }}" value="{{ slider.value }}" class="slider">
                                 <span class="badge badge-secondary">{{ slider.max }}</span>
@@ -81,10 +88,13 @@
 
                     {% for variable in settings_others %}
                         <div class="row pb-2">
-                            <div class="col-4 col-form-label">
+                            <div class="col-3 col-form-label">
                                 <b>{{ variable.name }}</b>
                             </div>
-                            <div class="col-8 pl-0">
+                            <div class="col-2 col-form-label">
+                                {{ variable.value }}
+                            </div>
+                            <div class="col-7 pl-0">
                                 <input name="{{ variable.name }}" class="form-control" type="text" value="{{ variable.value }}">
                             </div>
                         </div>

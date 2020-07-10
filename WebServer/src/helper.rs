@@ -13,13 +13,14 @@ pub mod raspberry {
 pub mod script_controller {
     use zmq::Socket;
     use zmq::Error;
+    use serde::{Deserialize, Serialize};
     use serde_cbor::to_vec;
     use serde_cbor::from_slice;
     use std::collections::HashMap;
     use std::process::Command;
     use std::str::from_utf8;
 
-    #[derive(Debug)]
+    #[derive(Serialize, Deserialize)]
     pub struct Slider {
         pub name: String,
         pub min: u32,
@@ -27,7 +28,7 @@ pub mod script_controller {
         pub value: u32,
     }
 
-    #[derive(Debug)]
+    #[derive(Serialize, Deserialize)]
     pub struct Variable {
         pub name: String,
         pub value: String,
@@ -172,7 +173,7 @@ pub mod websocket {
         }
     }
     
-    /// Echo incoming WebSocket messages and send a message periodically every second.
+    /// Read incoming WebSocket messages and send a message periodically every two second.
     pub async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
         let ws_stream = accept_async(stream).await.expect("Failed to accept");
         println!("[WEBSOCKET] New WebSocket connection: {}", peer);
@@ -246,11 +247,30 @@ pub mod websocket {
                                     }),
                                 });
                             } else {
+                                let mut settings_sliders = Vec::<helper::script_controller::Slider>::new();
+                                let mut settings_others = Vec::<helper::script_controller::Variable>::new();
+
+                                if is_pyscript_running {
+                                    let socket = helper::script_controller::connect();
+                            
+                                    match helper::script_controller::get_settings(&socket) {
+                                        Ok((sliders, others)) => {
+                                            settings_sliders = sliders;
+                                            settings_others = others;
+                                        },
+                                        Err(_) => println!("Error retreiving demo settings of controller...")
+                                    }
+                                }
+
                                 data = json!({
                                     "is_pyscript_running": is_pyscript_running,
                                     "navbar": json!({
                                         "action": action,
                                         "icon_name": icon_name,
+                                    }),
+                                    "variables": json!({
+                                        "sliders": settings_sliders,
+                                        "others": settings_others,
                                     }),
                                 });
                             }
@@ -271,5 +291,40 @@ pub mod websocket {
         }
     
         Ok(())
+    }
+}
+
+pub mod passwords {
+    use std::fs::File;
+    use std::io::{BufRead, BufReader};
+    use crypto::sha2::Sha256;
+    use crypto::digest::Digest;
+
+    #[derive(Debug, Clone)]
+    pub struct PasswordError;
+
+    pub fn check_password(user_in: &str, password_in: &str) -> Result<String, PasswordError> {
+        let filename = "users.txt";
+        let file = File::open(filename).unwrap();
+        let reader = BufReader::new(file);
+    
+        for (_, line) in reader.lines().enumerate() {
+            let line = line.unwrap();
+            let tokens: Vec<&str> = line.split(':').collect();
+            
+            if user_in == tokens[0] {
+                let mut hasher = Sha256::new();
+                hasher.input_str(password_in);
+                let result = hasher.result_str();
+
+                if result == tokens[1] {
+                    return Ok(tokens[2].to_string());
+                } else {
+                    return Err(PasswordError);
+                }
+            }
+        }
+
+        Err(PasswordError)
     }
 }
