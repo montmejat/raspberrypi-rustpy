@@ -2,6 +2,10 @@ RustPyLib/target/
 RustPyLib/Cargo.lock
 RustPyLib/**/*.rs.bk
 
+RustEmbedded/target/
+RustEmbedded/Cargo.lock
+RustEmbedded/**/*.rs.bk
+
 WebServer/target/
 WebServer/Cargo.lock
 
