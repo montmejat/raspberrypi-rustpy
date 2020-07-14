@@ -15,6 +15,7 @@ use stm32l4xx_hal::prelude::*;
 fn main() -> ! {
     let cp = cortex_m::Peripherals::take().unwrap();
     let dp = stm32l4xx_hal::stm32::Peripherals::take().unwrap();
+    let x = 6;
 
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();

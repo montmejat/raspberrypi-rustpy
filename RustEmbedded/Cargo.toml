@@ -2,7 +2,7 @@
 authors = ["aurelien"]
 edition = "2018"
 readme = "README.md"
-name = "app"
+name = "lumino"
 version = "0.1.0"
 
 [dependencies]
@@ -34,7 +34,7 @@ features = ["stm32l4x6", "rt"]
 
 # this lets you use `cargo fix`!
 [[bin]]
-name = "app"
+name = "lumino"
 test = false
 bench = false
 
