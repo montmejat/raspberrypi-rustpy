@@ -14,4 +14,4 @@ If you run into any issues, you can try erasing the flash memory (`st-flash eras
 
 # More Info
 
-Micro controller used [Nucleo L496ZG-P](https://www.st.com/en/microcontrollers-microprocessors/stm32l496zg.html?ecmp=tt9470_gl_link_feb2019&rt=db&id=DB3171#resource).
+Micro controller used [Nucleo L496ZG-P](https://www.st.com/en/microcontrollers-microprocessors/stm32l496zg.html?ecmp=tt9470_gl_link_feb2019&rt=db&id=DB3171#resource). More info on the board [here](https://www.st.com/en/evaluation-tools/nucleo-l496zg.html#overview).
