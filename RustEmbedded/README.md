@@ -10,7 +10,7 @@
 
 Start `openocd` in a terminal from the root of the project and then in an other terminal launch `cargo run`. You will be into a `gdb` session connected to `openocd` waiting at the entry of the `main` function.
 
-If you run into any issues, you can try erasing the flash memory (`st-flash erase`) and unplugging/plugging the board back on.
+If you run into any issues, you can try erasing the flash memory (`st-flash erase`) and unplugging/plugging the board back on. If it's still not working try using `st-util` instead of `openocd`.
 
 # More Info
 
