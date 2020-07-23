@@ -27,26 +27,11 @@ fn main() -> ! {
     // setup the PWM
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb2);
     let c1 = gpioa.pa0.into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper).into_af1(&mut gpioa.moder, &mut gpioa.afrl);
-    let mut pwm = dp.TIM2.pwm(c1, 800.khz(), clocks, &mut rcc.apb1r1);
+    let mut pwm = dp.TIM2.pwm(c1, 1.hz(), clocks, &mut rcc.apb1r1);
     let max = pwm.get_max_duty();
 
-    let one_duty = (max * 80 / 125) as u32;
-    let zero_duty = (max * 45 / 125) as u32;
-
-    let buffer: [u32; 128] = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            one_duty, one_duty, one_duty, one_duty, one_duty, one_duty, one_duty, one_duty,
-                            zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty,
-                            zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty,
-                            zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty,
-                            zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty,
-                            one_duty, one_duty, one_duty, one_duty, one_duty, one_duty, one_duty, one_duty,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+    // general variables
+    let buffer: [u32; 10] = [ 0, 0, max, max, 0, max / 8, max / 8, max / 2, max / 2, 0 ];
 
     pwm.set_duty(0);
     pwm.enable();
@@ -59,6 +44,14 @@ fn main() -> ! {
     
         rcc_ptr.ahb1enr.modify(|_, w| w.dma1en().set_bit()); // enable DMA1 clock: peripheral clock enable register
 
+        // timer configuration
+        // rcc_ptr.apb1enr1.modify(|_, w| w.tim4en().set_bit()); // power on the tim4 timer
+        // tim4.cr1.modify(|_, w| w.opm().clear_bit()); // OPM: mode 0 = counter not stopped at event
+        // tim4.psc.modify(|_, w| w.psc().bits(15_999)); // prescaler for 1 tick = 1 ms - 16 MHz / (15999 + 1) = 1 KHz
+        // tim4.arr.modify(|_, w| w.arr().bits(1_000)); // update event every 1 second
+        // // tim3.ccer.modify(|_, w| w.cc1e().set_bit()); // capture mode enabled: OC1 signal is output on the corresponding output pin
+        // tim4.cr1.modify(|_, w| w.cen().set_bit()); // CEN: Enable the counter
+
         // timer for DMA configuration
         tim2.dier.write(|w| w.tde().set_bit()); // enable DMA trigger
         tim2.dier.write(|w| w.ude().set_bit()); // enable update DMA request
@@ -69,9 +62,9 @@ fn main() -> ! {
 
         // DMA configuration
         dma1.cselr.write(|w| w.c2s().bits(0b0100)); // set CxS[3:0] to 0100 to map the DMA request to timer 2 channel 1
-        dma1.cpar2.write(|w| w.pa().bits(0x4000_0034)); // set the DMA peripheral address register to the capture/compare 1 of TIM2
         dma1.cmar2.write(|w| w.ma().bits(buffer.as_ptr() as u32)); // write the buffer to the memory adress
-        dma1.cndtr2.write(|w| w.ndt().bits(buffer.len() as u16)); // number of data to transfer register    
+        dma1.cndtr2.write(|w| w.ndt().bits(buffer.len() as u16)); // number of data to transfer register
+        dma1.cpar2.write(|w| w.pa().bits(0x4000_0034)); // set the DMA peripheral address register to the capture/compare 1 of TIM2
         dma1.ccr2.modify(|_, w| w
             .mem2mem().clear_bit() // memory-to-memory disabled
             .pl().high() // set highest priority
@@ -79,7 +72,7 @@ fn main() -> ! {
             .psize().bits(2) // size of peripheral: b10 = 32 bits long --> 32 or 16 ?? 
             .minc().set_bit() // memory increment mode enabled
             .pinc().clear_bit() // peripheral increment mode disabled
-            .circ().clear_bit() // circular mode: the dma transfer is repeated automatically when finished
+            .circ().set_bit() // circular mode: the dma transfer is repeated automatically when finished
             .dir().set_bit() // data transfer direction: 1 = read from memory
             .teie().set_bit() // transfer error interrupt enabled
             .htie().set_bit() // half transfer interrupt enabled
@@ -90,6 +83,16 @@ fn main() -> ! {
 
     led.set_high().unwrap();
 
+    // let mut led_on = false;
     loop {
+        // if tim4.sr.read().uif().bit_is_set() {
+        //     led_on = !led_on;
+        //     if led_on {
+        //         led.set_high().unwrap();
+        //     } else {
+        //         led.set_low().unwrap();
+        //     }
+        //     tim4.sr.modify(|_, w| w.uif().clear_bit());
+        // }
     }
 }
