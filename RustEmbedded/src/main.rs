@@ -9,6 +9,72 @@ use cortex_m_rt::entry;
 use stm32l4xx_hal::prelude::*;
 use stm32l4xx_hal::stm32::{TIM2, DMA1, RCC};
 
+#[derive(PartialEq)]
+enum Color {
+    Black,
+    White,
+    Red,
+    Blue,
+    Green,
+}
+
+#[inline(never)]
+fn create_buffer(max: u32, input: [Color; 64]) -> [u32; 1586] {
+    let one_duty = (max * 70 / 130) as u32;
+    let zero_duty = (max * 35 / 125) as u32;
+
+    let mut buffer = [max; 1586];
+    
+    for i in 0..64 {
+        if input[i] == Color::White {
+            for k in 0..24 {
+                buffer[i * 24 + k] = one_duty;
+            }
+        } else if input[i] == Color::Black {
+            for k in 0..24 {
+                buffer[i * 24 + k] = zero_duty;
+            }
+        } else if input[i] == Color::Green {
+            for k in 0..8 {
+                buffer[i * 24 + k] = one_duty;
+            }
+            for k in 8..16 {
+                buffer[i * 24 + k] = zero_duty;
+            }
+            for k in 16..24 {
+                buffer[i * 24 + k] = zero_duty;
+            }
+        } else if input[i] == Color::Red {
+            for k in 0..8 {
+                buffer[i * 24 + k] = zero_duty;
+            }
+            for k in 8..16 {
+                buffer[i * 24 + k] = one_duty;
+            }
+            for k in 16..24 {
+                buffer[i * 24 + k] = zero_duty;
+            }
+        } else if input[i] == Color::Blue {
+            for k in 0..8 {
+                buffer[i * 24 + k] = zero_duty;
+            }
+            for k in 8..16 {
+                buffer[i * 24 + k] = zero_duty;
+            }
+            for k in 16..24 {
+                buffer[i * 24 + k] = one_duty;
+            }
+        }
+    }
+
+    // reset
+    for i in 1536..1586 {
+        buffer[i] = 0;
+    }
+
+    buffer
+}
+
 #[entry]
 fn main() -> ! {
     // setup the board
@@ -30,23 +96,16 @@ fn main() -> ! {
     let mut pwm = dp.TIM2.pwm(c1, 800.khz(), clocks, &mut rcc.apb1r1);
     let max = pwm.get_max_duty();
 
-    let one_duty = (max * 80 / 125) as u32;
-    let zero_duty = (max * 45 / 125) as u32;
-
-    let buffer: [u32; 128] = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            one_duty, one_duty, one_duty, one_duty, one_duty, one_duty, one_duty, one_duty,
-                            zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty,
-                            zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty,
-                            zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty,
-                            zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty, zero_duty,
-                            one_duty, one_duty, one_duty, one_duty, one_duty, one_duty, one_duty, one_duty,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+    let buffer: [u32; 1586] = create_buffer(max, [
+        Color::Blue, Color::Blue, Color::Blue, Color::White, Color::White, Color::White, Color::Red, Color::Red,
+        Color::Blue, Color::Blue, Color::White, Color::White, Color::White, Color::Red, Color::Red, Color::Red,
+        Color::Blue, Color::Blue, Color::Blue, Color::White, Color::White, Color::White, Color::Red, Color::Red,
+        Color::Blue, Color::Blue, Color::White, Color::White, Color::White, Color::Red, Color::Red, Color::Red,
+        Color::Blue, Color::Blue, Color::Blue, Color::White, Color::White, Color::White, Color::Red, Color::Red,
+        Color::Blue, Color::Blue, Color::White, Color::White, Color::White, Color::Red, Color::Red, Color::Red,
+        Color::Blue, Color::Blue, Color::Blue, Color::White, Color::White, Color::White, Color::Red, Color::Red,
+        Color::Blue, Color::Blue, Color::White, Color::White, Color::White, Color::Red, Color::Red, Color::Red,
+    ]);
 
     pwm.set_duty(0);
     pwm.enable();
@@ -62,8 +121,6 @@ fn main() -> ! {
         // timer for DMA configuration
         tim2.dier.write(|w| w.tde().set_bit()); // enable DMA trigger
         tim2.dier.write(|w| w.ude().set_bit()); // enable update DMA request
-        // tim2.dier.write(|w| w.cc1de().set_bit()); // enable capture/compare 1 DMA request
-        // tim2.dier.write(|w| w.uie().set_bit()); // enable update interrupt enable
 
         let _a = &tim2.ccr1 as *const _ as u32; // very different from 0x4000_0034
 
@@ -79,7 +136,7 @@ fn main() -> ! {
             .psize().bits(2) // size of peripheral: b10 = 32 bits long --> 32 or 16 ?? 
             .minc().set_bit() // memory increment mode enabled
             .pinc().clear_bit() // peripheral increment mode disabled
-            .circ().clear_bit() // circular mode: the dma transfer is repeated automatically when finished
+            .circ().set_bit() // circular mode: the dma transfer is repeated automatically when finished
             .dir().set_bit() // data transfer direction: 1 = read from memory
             .teie().set_bit() // transfer error interrupt enabled
             .htie().set_bit() // half transfer interrupt enabled
