@@ -66,8 +66,8 @@ pub mod controller {
     }
 
     pub fn load_buffer(buffer: [u32; 1586]) {
-        let dma1 = unsafe { &*DMA1::ptr() }; // disable
-        dma1.ccr2.modify(|_, w| w.en().clear_bit());
+        let dma1 = unsafe { &*DMA1::ptr() }; 
+        dma1.ccr2.modify(|_, w| w.en().clear_bit()); // disable
         dma1.cmar2.write(|w| w.ma().bits(buffer.as_ptr() as u32)); // write the buffer to the memory address
         dma1.cndtr2.write(|w| w.ndt().bits(buffer.len() as u16)); // number of data to transfer register
         dma1.ccr2.modify(|_, w| w.en().set_bit()); // enable
