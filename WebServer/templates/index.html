@@ -10,7 +10,7 @@
 {% if logged_in -%}
     <script>
         $(document).ready(function() {
-            socket = create_socket_connection("192.168.0.26", "3012", "index");
+            socket = create_socket_connection("192.168.0.16", "3012", "index");
             
             custom_on_message_call = function(data) {
                 try {

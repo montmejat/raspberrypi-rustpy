@@ -5,6 +5,12 @@ extern crate rocket_contrib;
 
 mod helper;
 
+use std::result::Result;
+use std::collections::HashMap;
+use std::sync::Mutex;
+use std::{io::{Read, Write}, time};
+use std::io;
+
 use rocket::State;
 use rocket::response::Redirect;
 use rocket::request::{FromForm, FormItems, Form};
@@ -15,9 +21,7 @@ use askama::Template;
 
 use tokio::net::TcpListener;
 
-use std::result::Result;
-use std::collections::HashMap;
-use std::sync::Mutex;
+use bluetooth_serial_port::{BtProtocol, BtSocket};
 
 struct ServerState {
     logged_in_user: Mutex<Option<String>>,
@@ -59,10 +63,9 @@ struct LoginTemplate {
 #[derive(Template)]
 #[template(path = "maintenance.html")]
 struct MaintenanceTemplate {
+    admin: bool,
     logged_in: bool,
     icon_name: String,
-    settings_sliders: Vec<helper::script_controller::Slider>,
-    settings_others: Vec<helper::script_controller::Variable>,
     is_running: bool,
 }
 
@@ -154,8 +157,6 @@ fn maintenance(mut cookies: Cookies, state: State<ServerState>) -> MaintenanceTe
     let is_running = helper::script_controller::is_running();
 
     let (_, icon_name) = helper::script_controller::web::get_navbar_info();
-    let settings_sliders = Vec::<helper::script_controller::Slider>::new();
-    let settings_others = Vec::<helper::script_controller::Variable>::new();
 
     // TODO : get the maintenance settings
 
@@ -164,12 +165,25 @@ fn maintenance(mut cookies: Cookies, state: State<ServerState>) -> MaintenanceTe
             match &*state.logged_in_user.lock().unwrap() {
                 Some(logged_user) => {
                     if logged_user == username.value() {
-                        return MaintenanceTemplate {
-                            logged_in: true,
-                            icon_name: icon_name.to_string(),
-                            settings_sliders: settings_sliders,
-                            settings_others: settings_others,
-                            is_running: is_running,
+                        match cookies.get_private("usertype") {
+                            Some(usertype) => {
+                                if usertype.value() == "admin" {
+                                    return MaintenanceTemplate {
+                                        admin: true,
+                                        logged_in: true,
+                                        icon_name: icon_name.to_string(),
+                                        is_running: is_running,
+                                    }
+                                } else {
+                                    return MaintenanceTemplate {
+                                        admin: false,
+                                        logged_in: true,
+                                        icon_name: icon_name.to_string(),
+                                        is_running: is_running,
+                                    }
+                                }
+                            },
+                            None => {}
                         }
                     }
                 },
@@ -180,10 +194,9 @@ fn maintenance(mut cookies: Cookies, state: State<ServerState>) -> MaintenanceTe
     }
 
     MaintenanceTemplate {
+        admin: true,
         logged_in: false,
         icon_name: icon_name.to_string(),
-        settings_sliders: settings_sliders,
-        settings_others: settings_others,
         is_running: is_running,
     }
 }
@@ -238,6 +251,7 @@ fn login_form(mut cookies: Cookies, user_form: Form<UserLogin>, state: State<Ser
             let mut user = state.logged_in_user.lock().unwrap();
             *user = Some(user_form.username.clone());
             cookies.add_private(Cookie::new("username", user_form.username.clone()));
+            cookies.add_private(Cookie::new("usertype", user_type.clone()));
         },
         Err(_) => {
             return Redirect::to("/login?error=true");
@@ -326,6 +340,36 @@ fn rocket() -> rocket::Rocket {
 
 #[tokio::main]
 async fn main() {
+    // scan for devices
+    let devices = bluetooth_serial_port::scan_devices(time::Duration::from_secs(5)).unwrap();
+    if devices.len() == 0 {
+        panic!("No devices found");
+    }
+
+    println!("Found bluetooth devices {:?}", devices);
+    for device in devices {
+        if device.name == "HC-05".to_string() {
+            println!("Connecting to `{}` ({})", device.name, device.addr.to_string());
+
+            let mut socket = BtSocket::new(BtProtocol::RFCOMM).unwrap();
+            socket.connect(device.addr).unwrap();
+
+            // BtSocket implements the `Read` and `Write` traits (they're blocking)
+            let mut buffer = b"f";
+            let mut buffer_read = [0 as u8; 5];
+
+            let mut s = String::new();
+            io::stdin().read_line(&mut s).expect("Couldn't read line");  
+
+            let num_bytes_written = socket.write(buffer).unwrap();
+            println!("wrote: {} bytes", num_bytes_written);
+            let num_bytes_read = socket.read(&mut buffer_read).unwrap();
+            println!("Read `{}` bytes", num_bytes_written);
+        } else {
+            println!("This is not the dongle you are looking for.");
+        }
+    }
+
     tokio::spawn(async move {
         let addr = "0.0.0.0:3012";
         let mut listener = TcpListener::bind(&addr).await.expect("Can't listen");

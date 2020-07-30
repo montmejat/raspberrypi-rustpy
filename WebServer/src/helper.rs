@@ -246,7 +246,7 @@ pub mod websocket {
                                         "icon_name": icon_name,
                                     }),
                                 });
-                            } else {
+                            } else if value == "demo" {
                                 let mut settings_sliders = Vec::<helper::script_controller::Slider>::new();
                                 let mut settings_others = Vec::<helper::script_controller::Variable>::new();
 
@@ -271,6 +271,14 @@ pub mod websocket {
                                     "variables": json!({
                                         "sliders": settings_sliders,
                                         "others": settings_others,
+                                    }),
+                                });
+                            } else {
+                                data = json!({
+                                    "is_pyscript_running": is_pyscript_running,
+                                    "navbar": json!({
+                                        "action": action,
+                                        "icon_name": icon_name,
                                     }),
                                 });
                             }

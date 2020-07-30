@@ -8,14 +8,10 @@
 <link rel="stylesheet" href="bootstrap-4.3.1-dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="css/sliders.css">
 
-{% if logged_in -%}
+{% if logged_in && admin -%}
     <script>
         $(document).ready(function() {
-            socket = create_socket_connection("192.168.0.26", "3012", "maintenance");
-
-            function update(item, index) {
-                document.getElementById(item.name).innerHTML = item.value;
-            }
+            socket = create_socket_connection("192.168.0.16", "3012", "maintenance");
 
             custom_on_message_call = function(data) {
                 try {
@@ -27,9 +23,6 @@
                     if (data.is_pyscript_running && server_paragraph != undefined) {
                         location.reload();
                     }
-
-                    data.sliders.forEach(update);
-                    data.variables.forEach(update);
                 } catch(e) {
                     create_alert("primary", "New message", `${data}`);
                 }
@@ -63,35 +56,364 @@
                 <h1 class="display-4" style="font-size:2.5rem">Settings</h1>
                 <hr>
                 {% if is_running -%}
-                    {% for slider in settings_sliders %}
-                        <div class="row pb-2">
-                            <div class="col-3">
-                                <b>{{ slider.name }}</b>
-                            </div>
-                            <div class="col-2">
-                                {{ slider.value }}
-                            </div>
-                            <div class="col-7 pl-0" style="height: 25px; background: #e9ecef; display: flex; align-items: center;">
-                                <span class="badge badge-secondary">{{ slider.min }}</span>
-                                <input name="{{ slider.name }}" type="range" min="{{ slider.min }}" max="{{ slider.max }}" value="{{ slider.value }}" class="slider">
-                                <span class="badge badge-secondary">{{ slider.max }}</span>
-                            </div>
+                    <!-- TEST -->
+                    <div class="row">
+                        <div class="col-2">
+                            <b>LED Matrix</b>
                         </div>
-                    {% endfor %}
+                        <div class="col-10">
+                            <input class="form-control" type="text" value="[ led_11, led_12, led_13, ... ; led_21, led_22, led_23, ... ]">
+                        </div>
+                    </div>
+                
+                    <hr>
 
-                    {% for variable in settings_others %}
-                        <div class="row pb-2">
-                            <div class="col-3 col-form-label">
-                                <b>{{ variable.name }}</b>
-                            </div>
-                            <div class="col-2">
-                                {{ variable.value }}
-                            </div>
-                            <div class="col-7 pl-0">
-                                <input name="{{ variable.name }}" class="form-control" type="text" value="{{ variable.value }}">
-                            </div>
+                    <div class="row">
+                        <div class="col-2"></div>
+                        <div class="col-1">
+                            <b>LED 1</b>
                         </div>
-                    {% endfor %}
+                        <div class="col-1">
+                            <b>LED 2</b>
+                        </div>
+                        <div class="col-1">
+                            <b>LED 3</b>
+                        </div>
+                        <div class="col-1">
+                            <b>LED 4</b>
+                        </div>
+                        <div class="col-1">
+                            <b>LED 5</b>
+                        </div>
+                        <div class="col-1">
+                            <b>LED 6</b>
+                        </div>
+                        <div class="col-1">
+                            <b>LED 7</b>
+                        </div>
+                        <div class="col-1">
+                            <b>LED 8</b>
+                        </div>
+                        <div class="col-2">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-1"></div>
+                        <div class="col-1">
+                            <b>LED 1</b>
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-2"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-1"></div>
+                        <div class="col-1">
+                            <b>LED 2</b>
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-2"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-1"></div>
+                        <div class="col-1">
+                            <b>LED 3</b>
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-2"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-1"></div>
+                        <div class="col-1">
+                            <b>LED 4</b>
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-2"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-1"></div>
+                        <div class="col-1">
+                            <b>LED 5</b>
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-2"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-1"></div>
+                        <div class="col-1">
+                            <b>LED 6</b>
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-2"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-1"></div>
+                        <div class="col-1">
+                            <b>LED 7</b>
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-2"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-1"></div>
+                        <div class="col-1">
+                            <b>LED 8</b>
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-1">
+                            <input class="form-control" type="text" value="0">
+                        </div>
+                        <div class="col-2"></div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-3 col-form-label">
+                            <b>LED 1</b>
+                        </div>
+                        <div id="led1" class="col-2 col-form-label">
+                            0
+                        </div>
+                        <div class="col-7 pl-0">
+                            <input name="led1" class="form-control" type="text" value="0">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-3 col-form-label">
+                            <b>LED 2</b>
+                        </div>
+                        <div id="led2" class="col-2 col-form-label">
+                            0
+                        </div>
+                        <div class="col-7 pl-0">
+                            <input name="led1" class="form-control" type="text" value="0">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-3 col-form-label">
+                            <b>LED 3</b>
+                        </div>
+                        <div id="led3" class="col-2 col-form-label">
+                            0
+                        </div>
+                        <div class="col-7 pl-0">
+                            <input name="led1" class="form-control" type="text" value="0">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-3 col-form-label">
+                            <b>LED 4</b>
+                        </div>
+                        <div id="led4" class="col-2 col-form-label">
+                            0
+                        </div>
+                        <div class="col-7 pl-0">
+                            <input name="led1" class="form-control" type="text" value="0">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-3 col-form-label">
+                            <b>LED 5</b>
+                        </div>
+                        <div id="led5" class="col-2 col-form-label">
+                            0
+                        </div>
+                        <div class="col-7 pl-0">
+                            <input name="led1" class="form-control" type="text" value="0">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-3 col-form-label">
+                            <b>LED 6</b>
+                        </div>
+                        <div id="led6" class="col-2 col-form-label">
+                            0
+                        </div>
+                        <div class="col-7 pl-0">
+                            <input name="led1" class="form-control" type="text" value="0">
+                        </div>
+                    </div>
                 {% else -%}
                     <p id="server_off_message">The Python Script Controller is not running.</p>
                 {% endif -%}
@@ -104,10 +426,16 @@
             </form>
         </div>
     </div>
-{% else -%}
+{% else if !logged_in -%}
     <div class="container">
         <div class="alert alert-warning mt-4">
             You need to <a href="/login">log in</a> to access this page.
+        </div>
+    </div>
+{% else if logged_in && !admin -%}
+    <div class="container">
+        <div class="alert alert-warning mt-4">
+            You need to be logged in as administrator to access this page.
         </div>
     </div>
 {% endif -%}
