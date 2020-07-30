@@ -1,21 +1,13 @@
 pub mod controller {
     use stm32l4xx_hal::prelude::*;
     use stm32l4xx_hal::stm32::{TIM2, DMA1, RCC};
+    use stm32l4xx_hal::pwm::{Pwm, C1};
 
-    pub fn init() -> u32 {
-        // setup the board
-        let dp = stm32l4xx_hal::stm32::Peripherals::take().unwrap();
-
+    pub fn init(pwm: &mut Pwm<TIM2, C1>) -> u32 {
         // setup the peripherals
-        let mut flash = dp.FLASH.constrain();
-        let mut rcc = dp.RCC.constrain();
-        let clocks = rcc.cfgr.freeze(&mut flash.acr);
-        let _channels = dp.DMA1.split(&mut rcc.ahb1);
+        let dp = unsafe { stm32l4xx_hal::stm32::Peripherals::steal() };
 
         // setup the PWM
-        let mut gpioa = dp.GPIOA.split(&mut rcc.ahb2);
-        let c1 = gpioa.pa0.into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper).into_af1(&mut gpioa.moder, &mut gpioa.afrl);
-        let mut pwm = dp.TIM2.pwm(c1, 800.khz(), clocks, &mut rcc.apb1r1);
         let max = pwm.get_max_duty();
 
         pwm.set_duty(0);
