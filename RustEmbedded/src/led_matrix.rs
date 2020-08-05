@@ -5,7 +5,7 @@ pub mod controller {
 
     pub fn init(pwm: &mut Pwm<TIM2, C1>) -> u32 {
         // setup the peripherals
-        let dp = unsafe { stm32l4xx_hal::stm32::Peripherals::steal() };
+        // let dp = unsafe { stm32l4xx_hal::stm32::Peripherals::steal() };
 
         // setup the PWM
         let max = pwm.get_max_duty();
@@ -78,12 +78,11 @@ pub mod controls {
         Cyan,
     }
 
-    #[inline(never)]
-    pub fn create_buffer(max: u32, input: [Color; 64]) -> [u32; 1586] {
+    pub fn create_buffer_from_colors(max: u32, input: [Color; 64]) -> [u32; 1586] {
         let one_duty = (max * 90 / 125) as u32;
         let zero_duty = (max * 35 / 125) as u32;
 
-        let mut buffer = [max; 1586];
+        let mut buffer = [0 as u32; 1586];
         
         for i in 0..64 {
             if input[i] == Color::White {
@@ -147,11 +146,42 @@ pub mod controls {
             }
         }
 
-        // reset
-        for i in 1536..1586 {
-            buffer[i] = 0;
-        }
-
         buffer
+    }
+
+    pub fn create_buffer_from_values(max: u32, value: [u8; 192]) -> [u32; 1586] {
+        let one_duty = (max * 90 / 125) as u32;
+        let zero_duty = (max * 35 / 125) as u32;
+
+        let mut buffer = [0 as u32; 1586];
+        let mut index = 0;
+
+        for i in 0..192 {
+            let binary = get_binary_on_8bit(value[i]);
+            for j in 0..8 {
+                buffer[index] = match binary[j] {
+                    1 => one_duty,
+                    0 => zero_duty,
+                    _ => 0,
+                };
+                index += 1;
+            }
+        }
+        
+        buffer
+    }
+
+    fn get_binary_on_8bit(input: u8) -> [u8; 8] {
+        let mut value = input;
+        let mut binary = [0 as u8; 8];
+        let mut i = 8;
+    
+        while i > 0 {
+            binary[i - 1] = value % 2;
+            value = value / 2;
+            i -= 1;
+        }
+    
+        binary
     }
 }
