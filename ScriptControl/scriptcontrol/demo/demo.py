@@ -1,5 +1,6 @@
 from gpiozero import LED
 from time import sleep
+from random import randint
 import rpipy
 
 # LED plugged to the RasperryPi
@@ -11,15 +12,19 @@ class Led:
         self.leds = []
         self.leds_count = leds_count
 
-        for _ in range(leds_count):
+        for i in range(leds_count):
             self.leds.append(self.Led(0, 0, 0))
+        
+        self.leds[0] = self.Led(100, 0, 0)
+        self.leds[1] = self.Led(100, 0, 0)
+        self.leds[2] = self.Led(100, 0, 0)
     
     def __eq__(self, obj):
         if self.leds_count != obj.leds_count:
             return False
 
         for i in range(self.leds_count):
-            if self.leds.get(i) != obj.leds.get(i):
+            if self.leds[i] != obj.leds[i]:
                 return False
         
         return True

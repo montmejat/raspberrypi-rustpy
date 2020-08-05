@@ -24,18 +24,14 @@ class CommunicationsThread(Thread):
         
         if self.port != None:
             self.port.write(b'#') # start message
-            for i in range(self.leds_count):
-                led = self.leds.get(i)
-                print(i)
-                self.port.write(bytes(i))
 
-                # for byte in bytes(f"{led.green:08b}", 'utf-8'):
-                #     self.port.write(byte)
-                # for byte in bytes(f"{led.red:08b}", 'utf-8'):
-                #     self.port.write(byte)
-                # for byte in bytes(f"{led.blue:08b}", 'utf-8'):
-                #     self.port.write(byte)
-            self.port.write(b'#') # stop message
+            for i in range(64):
+                led = self.leds.get(i)
+                self.port.write(bytes(led.green))
+                self.port.write(bytes(led.red))
+                self.port.write(bytes(led.blue))
+            
+            self.port.write(b'?') # stop message
 
     def run(self):
         global pause
