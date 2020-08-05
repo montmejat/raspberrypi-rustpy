@@ -30,13 +30,12 @@ fn main() -> ! {
         .freeze(&mut flash.acr);
 
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb2);
-    let mut gpiod = dp.GPIOD.split(&mut rcc.ahb2);
 
     let c1 = gpioa.pa0.into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper).into_af1(&mut gpioa.moder, &mut gpioa.afrl);
     let mut pwm = dp.TIM2.pwm(c1, 800.khz(), clocks, &mut rcc.apb1r1);
     
     let max = led_matrix::controller::init(&mut pwm);
-    let buffer: [u32; 1586] = led_matrix::controls::create_buffer(max, [
+    let buffer: [u32; 1586] = led_matrix::controls::create_buffer_from_colors(max, [
         Cyan, Cyan, Cyan, Cyan, Cyan, Cyan, Cyan, Cyan,
         Cyan, Blue, Blue, Blue, Blue, Blue, Cyan, Cyan,
         Blue, Blue, Blue, Black, White, Black, Cyan, Cyan,
@@ -64,15 +63,27 @@ fn main() -> ! {
         &mut rcc.apb1r1,
     );
     
-    let (mut tx, mut rx) = serial.split();
+    let (_tx, mut rx) = serial.split();
 
-    led.set_high();
+    led.set_high().unwrap(); // configuration done led
 
-    let mut turn_on = false;
     loop {
         let received = block!(rx.read()).unwrap();
-        if received == 'o' as u8 {
-            led_blue.set_high();
+        if received == '#' as u8 { // new message incoming
+            led_blue.set_high().unwrap(); // bluetooth led
+            let mut incoming_buffer = [0 as u8; 192];
+            let mut i = 0;
+
+            incoming_buffer[i] = block!(rx.read()).unwrap();
+            while incoming_buffer[i] != '?' as u8 { // while message is not over
+                i += 1;
+                incoming_buffer[i] = block!(rx.read()).unwrap();
+            }
+
+            let buffer: [u32; 1586] = led_matrix::controls::create_buffer_from_values(max, incoming_buffer);
+            led_matrix::controller::load_buffer(buffer);
+
+            led_blue.set_low().unwrap(); // bluetooth led
         }
     }
 }
