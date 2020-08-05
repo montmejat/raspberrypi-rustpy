@@ -6,7 +6,6 @@
 <script src="javascript/socket_alerts.js"></script>
 <script src="bootstrap-4.3.1-dist/js/bootstrap.min.js"></script>
 <link rel="stylesheet" href="bootstrap-4.3.1-dist/css/bootstrap.min.css">
-<link rel="stylesheet" href="css/sliders.css">
 
 {% if logged_in -%}
     <script>
@@ -73,7 +72,7 @@
                             </div>
                             <div class="col-7 pl-0" style="height: 25px; background: #e9ecef; display: flex; align-items: center;">
                                 <span class="badge badge-secondary">{{ slider.min }}</span>
-                                <input name="{{ slider.name }}" type="range" min="{{ slider.min }}" max="{{ slider.max }}" value="{{ slider.value }}" class="slider">
+                                <input name="{{ slider.name }}" type="range" min="{{ slider.min }}" max="{{ slider.max }}" value="{{ slider.value }}" class="form-control-range">
                                 <span class="badge badge-secondary">{{ slider.max }}</span>
                             </div>
                         </div>

@@ -1,4 +1,4 @@
-import os, signal, sys, cbor, zmq, hashlib, time
+import os, signal, sys, cbor, zmq, hashlib, time, serial
 from threading import Thread
 from types import ModuleType
 
@@ -8,10 +8,34 @@ import demo
 class CommunicationsThread(Thread):
     def __init__(self, socket, print_debug=True, send_debug_to_client=True):
         super().__init__(daemon=True)
+
         self.socket = socket
         self.print_debug = print_debug
         self.send_debug_to_client = send_debug_to_client
         self.hash_key = hashlib.sha256('test'.encode()).hexdigest()
+        self.leds_count = 64
+        self.leds = demo.Led(self.leds_count) # TODO: make sure that this object stays in sync to the one at demo.py
+
+        try:
+            self.port = serial.Serial("/dev/rfcomm0", baudrate=9600)
+        except Exception:
+            self.port = None
+            print("\nBLUETOOTH ERROR! Make sure you connected to the bluetooth device.\nTry using: 'sudo rfcomm connect hci0 hc05_addr'.\n")
+        
+        if self.port != None:
+            self.port.write(b'#') # start message
+            for i in range(self.leds_count):
+                led = self.leds.get(i)
+                print(i)
+                self.port.write(bytes(i))
+
+                # for byte in bytes(f"{led.green:08b}", 'utf-8'):
+                #     self.port.write(byte)
+                # for byte in bytes(f"{led.red:08b}", 'utf-8'):
+                #     self.port.write(byte)
+                # for byte in bytes(f"{led.blue:08b}", 'utf-8'):
+                #     self.port.write(byte)
+            self.port.write(b'#') # stop message
 
     def run(self):
         global pause
@@ -177,6 +201,8 @@ def load_variables(filename='demo_vars'):
 
 
 def start_server(print_debug=True):
+    global port
+
     if print_debug:
         print(' ** Lamp Control Started ** ')
     signal.signal(signal.SIGINT, signal_handler)

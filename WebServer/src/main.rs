@@ -8,8 +8,6 @@ mod helper;
 use std::result::Result;
 use std::collections::HashMap;
 use std::sync::Mutex;
-use std::{io::{Read, Write}, time};
-use std::io;
 
 use rocket::State;
 use rocket::response::Redirect;
@@ -20,8 +18,6 @@ use rocket_contrib::serve::StaticFiles;
 use askama::Template;
 
 use tokio::net::TcpListener;
-
-use bluetooth_serial_port::{BtProtocol, BtSocket};
 
 struct ServerState {
     logged_in_user: Mutex<Option<String>>,
@@ -44,6 +40,7 @@ struct HomeTemplate {
     icon_name: String,
     cpu_temp: String,
     is_running: bool,
+    bluetooth: bool,
 }
 
 #[derive(Template)]
@@ -67,6 +64,7 @@ struct MaintenanceTemplate {
     logged_in: bool,
     icon_name: String,
     is_running: bool,
+    leds: Vec<helper::led::Led>,
 }
 
 #[get("/")]
@@ -86,6 +84,7 @@ fn index(mut cookies: Cookies, state: State<ServerState>) -> HomeTemplate {
                             icon_name: icon_name.to_string(),
                             cpu_temp: cpu_temp.to_string(),
                             is_running: is_running,
+                            bluetooth: false,
                         }
                     }
                 },
@@ -100,6 +99,7 @@ fn index(mut cookies: Cookies, state: State<ServerState>) -> HomeTemplate {
         icon_name: icon_name.to_string(),
         cpu_temp: cpu_temp.to_string(),
         is_running: is_running,
+        bluetooth: false,
     }
 }
 
@@ -159,6 +159,7 @@ fn maintenance(mut cookies: Cookies, state: State<ServerState>) -> MaintenanceTe
     let (_, icon_name) = helper::script_controller::web::get_navbar_info();
 
     // TODO : get the maintenance settings
+    let leds = helper::led::init(64);
 
     match cookies.get_private("username") {
         Some(username) => {
@@ -173,6 +174,7 @@ fn maintenance(mut cookies: Cookies, state: State<ServerState>) -> MaintenanceTe
                                         logged_in: true,
                                         icon_name: icon_name.to_string(),
                                         is_running: is_running,
+                                        leds: leds,
                                     }
                                 } else {
                                     return MaintenanceTemplate {
@@ -180,6 +182,7 @@ fn maintenance(mut cookies: Cookies, state: State<ServerState>) -> MaintenanceTe
                                         logged_in: true,
                                         icon_name: icon_name.to_string(),
                                         is_running: is_running,
+                                        leds: leds,
                                     }
                                 }
                             },
@@ -198,6 +201,7 @@ fn maintenance(mut cookies: Cookies, state: State<ServerState>) -> MaintenanceTe
         logged_in: false,
         icon_name: icon_name.to_string(),
         is_running: is_running,
+        leds: leds,
     }
 }
 
@@ -306,7 +310,7 @@ impl<'f> FromForm<'f> for Item {
 }
 
 #[post("/demo/send?", data="<form>")]
-fn send(form: Form<Item>) -> Redirect{
+fn send(form: Form<Item>) -> Redirect {
     let socket = helper::script_controller::connect();
 
     for (variable_name, variable_value) in form.fields.iter() {
@@ -328,6 +332,8 @@ fn send(form: Form<Item>) -> Redirect{
 }
 
 fn rocket() -> rocket::Rocket {
+    let _socket = helper::raspberry::bluetooth::init();
+
     let server_state = ServerState {
         logged_in_user: Mutex::new(None),
     };
@@ -340,36 +346,6 @@ fn rocket() -> rocket::Rocket {
 
 #[tokio::main]
 async fn main() {
-    // scan for devices
-    let devices = bluetooth_serial_port::scan_devices(time::Duration::from_secs(5)).unwrap();
-    if devices.len() == 0 {
-        panic!("No devices found");
-    }
-
-    println!("Found bluetooth devices {:?}", devices);
-    for device in devices {
-        if device.name == "HC-05".to_string() {
-            println!("Connecting to `{}` ({})", device.name, device.addr.to_string());
-
-            let mut socket = BtSocket::new(BtProtocol::RFCOMM).unwrap();
-            socket.connect(device.addr).unwrap();
-
-            // BtSocket implements the `Read` and `Write` traits (they're blocking)
-            let mut buffer = b"f";
-            let mut buffer_read = [0 as u8; 5];
-
-            let mut s = String::new();
-            io::stdin().read_line(&mut s).expect("Couldn't read line");  
-
-            let num_bytes_written = socket.write(buffer).unwrap();
-            println!("wrote: {} bytes", num_bytes_written);
-            let num_bytes_read = socket.read(&mut buffer_read).unwrap();
-            println!("Read `{}` bytes", num_bytes_written);
-        } else {
-            println!("This is not the dongle you are looking for.");
-        }
-    }
-
     tokio::spawn(async move {
         let addr = "0.0.0.0:3012";
         let mut listener = TcpListener::bind(&addr).await.expect("Can't listen");

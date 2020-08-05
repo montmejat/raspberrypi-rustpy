@@ -8,6 +8,44 @@ pub mod raspberry {
         let temp = from_utf8(&cpu_temp).unwrap().replace("temp=", "");
         temp
     }
+
+    pub mod bluetooth {
+        use std::time;
+        use std::io::{Read, Write};
+        use bluetooth_serial_port::{BtProtocol, BtSocket};
+
+        pub fn init() -> Option<BtSocket> {
+            let devices = bluetooth_serial_port::scan_devices(time::Duration::from_secs(5)).unwrap();
+            if devices.len() == 0 {
+                println!("[Bluetooth] No devices found.");
+            } else {
+                for device in devices {
+                    if device.name == "HC-05".to_string() {
+                        println!("[Bluetooth] Connecting to `{}` ({}).", device.name, device.addr.to_string());
+
+                        let mut socket = BtSocket::new(BtProtocol::RFCOMM).unwrap();
+                        socket.connect(device.addr).unwrap();
+
+                        return Some(socket);
+                    }
+                }
+            }
+
+            return None;
+        }
+
+        pub fn write(socket: &mut BtSocket, _message: String) { // TODO 
+            let buffer = b"f";
+            let num_bytes_written = socket.write(buffer).unwrap();
+            println!("Wrote `{}` bytes", num_bytes_written);
+        }
+
+        pub fn read(socket: &mut BtSocket) {
+            let mut buffer_read = [0 as u8; 5];
+            let num_bytes_read = socket.read(&mut buffer_read).unwrap();
+            println!("Read `{}` bytes", num_bytes_read);
+        }
+    }
 }
 
 pub mod script_controller {
@@ -173,7 +211,6 @@ pub mod websocket {
         }
     }
     
-    /// Read incoming WebSocket messages and send a message periodically every two second.
     pub async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
         let ws_stream = accept_async(stream).await.expect("Failed to accept");
         println!("[WEBSOCKET] New WebSocket connection: {}", peer);
@@ -334,5 +371,29 @@ pub mod passwords {
         }
 
         Err(PasswordError)
+    }
+}
+
+pub mod led {
+    pub struct Led {
+        pub name: String,
+        pub green: u8,
+        pub red: u8,
+        pub blue: u8,
+    }
+
+    pub fn init(led_count: u32) -> Vec<Led> {
+        let mut leds = Vec::new();
+
+        for i in 0..led_count {
+            leds.push(Led {
+                name: format!("LED {}", i),
+                green: 0,
+                red: 0,
+                blue: 0,
+            });
+        }
+
+        leds
     }
 }

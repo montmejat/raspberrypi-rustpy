@@ -54,20 +54,32 @@
 
     <div class="container">
         <div class="jumbotron">
-            <h1 class="display-4" style="font-size:2.5rem">My RaspberryPi</h1>
+            <h1 class="display-4" style="font-size:2.5rem">RaspberryPi</h1>
             <p class="lead">
                 <div class="container">
                     <div class="row">
                         <div id="cpu_temp">CPU {{ cpu_temp }}</div>
                     </div>
+                    <hr/>
                     <div class="row">
-                        <div>Python Controller
+                        <div style="width: 23px;">
                             {% if is_running -%}
                                 <img id="is_pyscript_running_icon" src="bootstrap-icons-1.0.0-alpha4/circle-fill-green.svg" alt="" width="12" height="12">
                             {% else -%}
                                 <img id="is_pyscript_running_icon" src="bootstrap-icons-1.0.0-alpha4/circle-fill-red.svg" alt="" width="12" height="12">
                             {% endif -%}
                         </div>
+                        Python Controller
+                    </div>
+                    <div class="row">
+                        <div style="width: 23px;">
+                            {% if bluetooth -%}
+                                <img id="is_pyscript_running_icon" src="bootstrap-icons-1.0.0-alpha4/circle-fill-green.svg" alt="" width="12" height="12">
+                            {% else -%}
+                                <img id="is_pyscript_running_icon" src="bootstrap-icons-1.0.0-alpha4/circle-fill-red.svg" alt="" width="12" height="12">
+                            {% endif -%}
+                        </div>
+                        Bluetooth connection
                     </div>
                 </div>
             </p>
