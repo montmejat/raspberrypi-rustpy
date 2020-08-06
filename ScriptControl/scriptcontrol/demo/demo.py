@@ -1,9 +1,43 @@
 from gpiozero import LED
 from time import sleep
+from random import randint
 import rpipy
 
+# LED plugged to the RasperryPi
 led = LED(26)
 
+# LED matrix to control via the webserver
+class Led:
+    def __init__(self, leds_count):
+        self.leds = []
+        self.leds_count = leds_count
+
+        for i in range(self.leds_count):
+            self.leds.append(self.Led(255, 0, 0))
+    
+    def __eq__(self, obj):
+        if self.leds_count != obj.leds_count:
+            return False
+
+        for i in range(self.leds_count):
+            if self.leds[i] != obj.leds[i]:
+                return False
+        
+        return True
+
+    def get(self, i):
+        return self.leds[i]
+
+    class Led:
+        def __init__(self, green, red, blue):
+            self.green = green
+            self.red = red
+            self.blue = blue
+
+        def __eq__(self, obj):
+            return (self.green == obj.green and self.red == obj.red and self.blue == obj.blue)
+
+# Personnal settings to also control via the webserver
 class Settings:
     def __init__(self):
         self.my_var = 50
@@ -18,6 +52,7 @@ class Settings:
             self.value = value
 
 param = Settings()
+led_matrix = Led(64)
 
 def start():
     print("Device info:", rpipy.get_device_info(), "| temp:", rpipy.measure_temp())
