@@ -68,20 +68,28 @@ fn main() -> ! {
     led.set_high().unwrap(); // configuration done led
 
     loop {
-        let received = block!(rx.read()).unwrap();
+        let mut received = block!(rx.read()).unwrap();
         if received == '#' as u8 { // new message incoming
             led_blue.set_high().unwrap(); // bluetooth led
             let mut incoming_buffer = [0 as u8; 192];
             let mut i = 0;
 
             incoming_buffer[i] = block!(rx.read()).unwrap();
-            while incoming_buffer[i] != '?' as u8 { // while message is not over
-                i += 1;
-                incoming_buffer[i] = block!(rx.read()).unwrap();
+            loop {
+                if i < 191 {
+                    i += 1;
+                }
+
+                received = block!(rx.read()).unwrap();
+                if received != '?' as u8 {
+                    incoming_buffer[i] = received;
+                } else {
+                    break;
+                }                                
             }
 
-            let buffer: [u32; 1586] = led_matrix::controls::create_buffer_from_values(max, incoming_buffer);
-            led_matrix::controller::load_buffer(buffer);
+            let new_buffer: [u32; 1586] = led_matrix::controls::create_buffer_from_values(max, incoming_buffer);
+            led_matrix::controller::load_buffer(new_buffer);
 
             led_blue.set_low().unwrap(); // bluetooth led
         }
