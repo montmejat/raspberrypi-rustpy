@@ -12,12 +12,8 @@ class Led:
         self.leds = []
         self.leds_count = leds_count
 
-        for i in range(leds_count):
-            self.leds.append(self.Led(0, 0, 0))
-        
-        self.leds[0] = self.Led(100, 0, 0)
-        self.leds[1] = self.Led(100, 0, 0)
-        self.leds[2] = self.Led(100, 0, 0)
+        for i in range(self.leds_count):
+            self.leds.append(self.Led(255, 0, 0))
     
     def __eq__(self, obj):
         if self.leds_count != obj.leds_count:

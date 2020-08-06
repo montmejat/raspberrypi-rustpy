@@ -1,4 +1,4 @@
-import os, signal, sys, cbor, zmq, hashlib, time, serial
+import os, signal, sys, cbor, zmq, hashlib, time, serial, struct
 from threading import Thread
 from types import ModuleType
 
@@ -25,11 +25,12 @@ class CommunicationsThread(Thread):
         if self.port != None:
             self.port.write(b'#') # start message
 
-            for i in range(64):
+            for i in range(self.leds_count):
                 led = self.leds.get(i)
-                self.port.write(bytes(led.green))
-                self.port.write(bytes(led.red))
-                self.port.write(bytes(led.blue))
+                # print(led.green, led.red, led.blue)
+                self.port.write(struct.pack('=B', led.green))
+                self.port.write(struct.pack('=B', led.red))
+                self.port.write(struct.pack('=B', led.blue))
             
             self.port.write(b'?') # stop message
 
