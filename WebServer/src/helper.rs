@@ -57,6 +57,7 @@ pub mod script_controller {
     use std::collections::HashMap;
     use std::process::Command;
     use std::str::from_utf8;
+    use crate::helper::led;
 
     #[derive(Serialize, Deserialize)]
     pub struct Slider {
@@ -133,6 +134,32 @@ pub mod script_controller {
                 }
 
                 Ok((settings_sliders, settings_others))
+            },
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn get_leds(socket: &Socket) -> Result<Vec<led::Led>, Error> {
+        let mut data = HashMap::new();
+        data.insert("type", "get");
+        data.insert("value", "leds");
+        send_message(&socket, data);
+
+        match socket.recv_bytes(0) {
+            Ok(value) => {
+                let in_leds: Vec<HashMap<String, String>> = from_slice(&value).unwrap();
+                let mut leds: Vec<led::Led> = Vec::new();
+
+                for led in in_leds {
+                    leds.push(led::Led {
+                        name: led.get("led").unwrap().to_string(),
+                        green: led.get("green").unwrap().parse().unwrap(),
+                        red: led.get("red").unwrap().parse().unwrap(),
+                        blue: led.get("blue").unwrap().parse().unwrap(),
+                    });
+                }
+
+                Ok(leds)
             },
             Err(e) => Err(e),
         }

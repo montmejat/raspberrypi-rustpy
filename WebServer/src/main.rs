@@ -26,6 +26,7 @@ struct ServerState {
 #[derive(Template)]
 #[template(path = "demo.html")]
 struct DemoTemplate {
+    admin: bool,
     logged_in: bool,
     icon_name: String,
     settings_sliders: Vec<helper::script_controller::Slider>,
@@ -36,6 +37,7 @@ struct DemoTemplate {
 #[derive(Template)]
 #[template(path = "index.html")]
 struct HomeTemplate {
+    admin: bool,
     logged_in: bool,
     icon_name: String,
     cpu_temp: String,
@@ -79,12 +81,29 @@ fn index(mut cookies: Cookies, state: State<ServerState>) -> HomeTemplate {
             match &*state.logged_in_user.lock().unwrap() {
                 Some(logged_user) => {
                     if logged_user == username.value() {
-                        return HomeTemplate {
-                            logged_in: true,
-                            icon_name: icon_name.to_string(),
-                            cpu_temp: cpu_temp.to_string(),
-                            is_running: is_running,
-                            bluetooth: false,
+                        match cookies.get_private("usertype") {
+                            Some(usertype) => {
+                                if usertype.value() == "admin" {
+                                    return HomeTemplate {
+                                        admin: true,
+                                        logged_in: true,
+                                        icon_name: icon_name.to_string(),
+                                        cpu_temp: cpu_temp.to_string(),
+                                        is_running: is_running,
+                                        bluetooth: false,
+                                    }
+                                } else {
+                                    return HomeTemplate {
+                                        admin: false,
+                                        logged_in: true,
+                                        icon_name: icon_name.to_string(),
+                                        cpu_temp: cpu_temp.to_string(),
+                                        is_running: is_running,
+                                        bluetooth: false,
+                                    }
+                                }
+                            },
+                            None => {}
                         }
                     }
                 },
@@ -95,6 +114,7 @@ fn index(mut cookies: Cookies, state: State<ServerState>) -> HomeTemplate {
     }
 
     HomeTemplate {
+        admin: false,
         logged_in: false,
         icon_name: icon_name.to_string(),
         cpu_temp: cpu_temp.to_string(),
@@ -128,12 +148,29 @@ fn demo(mut cookies: Cookies, state: State<ServerState>) -> DemoTemplate {
             match &*state.logged_in_user.lock().unwrap() {
                 Some(logged_user) => {
                     if logged_user == username.value() {
-                        return DemoTemplate {
-                            logged_in: true,
-                            icon_name: icon_name.to_string(),
-                            settings_sliders: settings_sliders,
-                            settings_others: settings_others,
-                            is_running: is_running,
+                        match cookies.get_private("usertype") {
+                            Some(usertype) => {
+                                if usertype.value() == "admin" {
+                                    return DemoTemplate {
+                                        admin: true,
+                                        logged_in: true,
+                                        icon_name: icon_name.to_string(),
+                                        settings_sliders: settings_sliders,
+                                        settings_others: settings_others,
+                                        is_running: is_running,
+                                    }
+                                } else {
+                                    return DemoTemplate {
+                                        admin: false,
+                                        logged_in: true,
+                                        icon_name: icon_name.to_string(),
+                                        settings_sliders: settings_sliders,
+                                        settings_others: settings_others,
+                                        is_running: is_running,
+                                    }
+                                }
+                            },
+                            None => {}
                         }
                     }
                 },
@@ -144,6 +181,7 @@ fn demo(mut cookies: Cookies, state: State<ServerState>) -> DemoTemplate {
     }
 
     DemoTemplate {
+        admin: false,
         logged_in: false,
         icon_name: icon_name.to_string(),
         settings_sliders: settings_sliders,
@@ -158,8 +196,14 @@ fn maintenance(mut cookies: Cookies, state: State<ServerState>) -> MaintenanceTe
 
     let (_, icon_name) = helper::script_controller::web::get_navbar_info();
 
-    // TODO : get the maintenance settings
-    let leds = helper::led::init(64);
+    // let leds = helper::led::init(64);
+    let socket = helper::script_controller::connect();
+
+    let mut leds: Vec<helper::led::Led> = Vec::new();
+    match helper::script_controller::get_leds(&socket) {
+        Ok(value) => leds = value,
+        Err(_) => {},
+    }
 
     match cookies.get_private("username") {
         Some(username) => {
@@ -332,7 +376,7 @@ fn send(form: Form<Item>) -> Redirect {
 }
 
 fn rocket() -> rocket::Rocket {
-    let _socket = helper::raspberry::bluetooth::init();
+    // let _socket = helper::raspberry::bluetooth::init();
 
     let server_state = ServerState {
         logged_in_user: Mutex::new(None),

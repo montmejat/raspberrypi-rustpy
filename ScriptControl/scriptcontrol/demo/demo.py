@@ -14,16 +14,6 @@ class Led:
 
         for i in range(self.leds_count):
             self.leds.append(self.Led(255, 0, 0))
-    
-    def __eq__(self, obj):
-        if self.leds_count != obj.leds_count:
-            return False
-
-        for i in range(self.leds_count):
-            if self.leds[i] != obj.leds[i]:
-                return False
-        
-        return True
 
     def get(self, i):
         return self.leds[i]
@@ -33,9 +23,6 @@ class Led:
             self.green = green
             self.red = red
             self.blue = blue
-
-        def __eq__(self, obj):
-            return (self.green == obj.green and self.red == obj.red and self.blue == obj.blue)
 
 # Personnal settings to also control via the webserver
 class Settings:

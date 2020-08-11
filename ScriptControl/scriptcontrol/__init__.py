@@ -91,8 +91,7 @@ class CommunicationsThread(Thread):
                         message = cbor.dumps({ 'paused': paused })
                         self.socket.send(message)
                         continue
-                    
-                    if data['value'] == 'settings':
+                    elif data['value'] == 'settings':
                         variable_names = [variable for variable in dir(demo.param) if not (variable.startswith('__') or variable == 'SliderValue')]
                         variables = {}
 
@@ -109,6 +108,15 @@ class CommunicationsThread(Thread):
                         message = cbor.dumps(variables)
                         self.socket.send(message)
                         continue
+                    elif data['value'] == 'leds':
+                        leds_as_dict = []
+                        
+                        for i in range(self.leds_count):
+                            leds_as_dict.append({ 'led': str(i), 'green': str(self.leds.get(i).green), 'red': str(self.leds.get(i).red), 'blue': str(self.leds.get(i).blue) })
+
+                        message = cbor.dumps(leds_as_dict)
+                        self.socket.send(message)
+                        continue
 
                 elif data['type'] == 'call':
                     function_name = data['value']
@@ -116,35 +124,51 @@ class CommunicationsThread(Thread):
                     getattr(demo, function_name)()
 
                 elif data['type'] == 'set':
-                    var_name = data['var']
-                    value = data['value']
-                    message = 'Modifying ' + var_name + ' to ' + value
+                    if not data['var'].contains('led'): 
+                        var_name = data['var']
+                        value = data['value']
+                        message = 'Modifying ' + var_name + ' to ' + value
 
-                    if 'cast' in data.keys():
-                        try:
-                            if data['cast'] == 'int':
-                                value = int(value)
-                                setattr(demo.param, var_name, value)
-                            elif data['cast'] == 'float':
-                                value = float(value)
-                                setattr(demo.param, var_name, value)
-                            elif data['cast'] == 'str':
-                                value = str(value)
-                                setattr(demo.param, var_name, value)
-                            elif data['cast'] == 'bool':
-                                value = bool(value)
-                                setattr(demo.param, var_name, value)
-                        except ValueError:
-                            message = '      Cannot modify' + var_name + 'to' + value, 'of the type' + data['cast']
-                    else:
-                        var_type = type(getattr(demo.param, var_name))
-                        if var_type == demo.Settings.SliderValue:
-                            slider = getattr(demo.param, var_name)
-                            slider.value = value
-                            setattr(demo.param, var_name, slider)
+                        if 'cast' in data.keys():
+                            try:
+                                if data['cast'] == 'int':
+                                    value = int(value)
+                                    setattr(demo.param, var_name, value)
+                                elif data['cast'] == 'float':
+                                    value = float(value)
+                                    setattr(demo.param, var_name, value)
+                                elif data['cast'] == 'str':
+                                    value = str(value)
+                                    setattr(demo.param, var_name, value)
+                                elif data['cast'] == 'bool':
+                                    value = bool(value)
+                                    setattr(demo.param, var_name, value)
+                            except ValueError:
+                                message = '      Cannot modify' + var_name + 'to' + value, 'of the type' + data['cast']
                         else:
-                            value = var_type(value)
-                            setattr(demo.param, var_name, value)
+                            var_type = type(getattr(demo.param, var_name))
+                            if var_type == demo.Settings.SliderValue:
+                                slider = getattr(demo.param, var_name)
+                                slider.value = value
+                                setattr(demo.param, var_name, slider)
+                            else:
+                                value = var_type(value)
+                                setattr(demo.param, var_name, value)
+                    else:
+                        led_number = data['var'].replace('led', '')
+                        led = self.leds.get(int(led_number))
+                        led.green = data['green']
+                        led.red = data['red']
+                        led.blue = data['blue']
+
+                        self.port.write(b'#')
+                        for i in range(self.leds_count):
+                            led = self.leds.get(i)
+                            self.port.write(struct.pack('=B', led.green))
+                            self.port.write(struct.pack('=B', led.red))
+                            self.port.write(struct.pack('=B', led.blue))
+                        self.port.write(b'?')
+
                 else:
                     message = 'Command not correct'
 

@@ -32,7 +32,35 @@
         });
     </script>
 
-    <nav class="navbar navbar-light bg-light mb-3">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="/images/icon.png" width="30" height="30" class="d-inline-block align-top" alt="">
+                Lumino Project
+            </a>
+    
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+    
+            <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+                <div class="navbar-nav">
+                    <a class="nav-item nav-link active" href="/">Home</a>
+                    <a class="nav-item nav-link" href="/demo">Demo</a>
+                    {% if admin %}
+                        <a class="nav-item nav-link" href="/maintenance">Maintenance</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="text-right">
+                <a id="action_link"><img id="icon_name" src="bootstrap-icons-1.0.0-alpha4/{{icon_name}}.svg" alt="" width="32" height="32"></a>
+                <a href="/logout"><img src="bootstrap-icons-1.0.0-alpha4/door-open.svg" alt="" width="32" height="32"></a>
+            </div>
+        </div>       
+    </nav>
+
+    <!-- <nav class="navbar navbar-light bg-light mb-3">
         <div class="container">
             <div class="text-left">
                 <a href="/logout"><img src="bootstrap-icons-1.0.0-alpha4/door-open.svg" alt="" width="32" height="32"></a>
@@ -40,15 +68,15 @@
             </div>
 
             <div class="text-center">
-                <h4>Lumino Project</h4>
+                <h4>Demo Script</h4>
             </div>
 
             <div class="form-inline">
-                <a href="/maintenance"><img src="bootstrap-icons-1.0.0-alpha4/arrow-left.svg" alt="" width="32" height="32" title="Left cycle"></a>
-                <a href="/demo"><img src="bootstrap-icons-1.0.0-alpha4/arrow-right.svg" alt="" width="32" height="32" title="Right cycle"></a>
+                <a href="/"><img src="bootstrap-icons-1.0.0-alpha4/arrow-left.svg" alt="" width="32" height="32" title="Left cycle"></a>
+                <a href="/maintenance"><img src="bootstrap-icons-1.0.0-alpha4/arrow-right.svg" alt="" width="32" height="32" title="Right cycle"></a>
             </div>
         </div>
-    </nav>
+    </nav> -->
 
     <div id="notifications" style="max-height: 300px; overflow: auto" class="container"></div>
 
