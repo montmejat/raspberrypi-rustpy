@@ -8,9 +8,10 @@ mod helper;
 use std::result::Result;
 use std::collections::HashMap;
 use std::sync::Mutex;
+use std::io::Error;
 
 use rocket::State;
-use rocket::response::Redirect;
+use rocket::response::{Redirect, NamedFile};
 use rocket::request::{FromForm, FormItems, Form};
 use rocket::http::{Cookie, Cookies};
 use rocket_contrib::serve::StaticFiles;
@@ -21,6 +22,7 @@ use tokio::net::TcpListener;
 
 struct ServerState {
     logged_in_user: Mutex<Option<String>>,
+    activated_mode: Mutex<String>,
 }
 
 #[derive(Template)]
@@ -31,6 +33,17 @@ struct DemoTemplate {
     icon_name: String,
     settings_sliders: Vec<helper::script_controller::Slider>,
     settings_others: Vec<helper::script_controller::Variable>,
+    is_running: bool,
+    activated: bool,
+}
+
+#[derive(Template)]
+#[template(path = "rainbow.html")]
+struct RainbowTemplate {
+    admin: bool,
+    logged_in: bool,
+    icon_name: String,
+    activated: bool,
     is_running: bool,
 }
 
@@ -67,6 +80,11 @@ struct MaintenanceTemplate {
     icon_name: String,
     is_running: bool,
     leds: Vec<helper::led::Led>,
+}
+
+#[get("/favicon.ico")]
+fn favicon() -> Result<NamedFile, Error> {
+    NamedFile::open("static/images/favicon.ico")
 }
 
 #[get("/")]
@@ -131,6 +149,8 @@ fn demo(mut cookies: Cookies, state: State<ServerState>) -> DemoTemplate {
     let mut settings_sliders = Vec::<helper::script_controller::Slider>::new();
     let mut settings_others = Vec::<helper::script_controller::Variable>::new();
 
+    let mode = &*state.activated_mode.lock().unwrap() == "demo";
+
     if is_running {
         let socket = helper::script_controller::connect();
 
@@ -158,6 +178,7 @@ fn demo(mut cookies: Cookies, state: State<ServerState>) -> DemoTemplate {
                                         settings_sliders: settings_sliders,
                                         settings_others: settings_others,
                                         is_running: is_running,
+                                        activated: mode,
                                     }
                                 } else {
                                     return DemoTemplate {
@@ -167,6 +188,7 @@ fn demo(mut cookies: Cookies, state: State<ServerState>) -> DemoTemplate {
                                         settings_sliders: settings_sliders,
                                         settings_others: settings_others,
                                         is_running: is_running,
+                                        activated: mode,
                                     }
                                 }
                             },
@@ -186,6 +208,57 @@ fn demo(mut cookies: Cookies, state: State<ServerState>) -> DemoTemplate {
         icon_name: icon_name.to_string(),
         settings_sliders: settings_sliders,
         settings_others: settings_others,
+        is_running: is_running,
+        activated: mode,
+    }
+}
+
+#[get("/rainbow")]
+fn rainbow(mut cookies: Cookies, state: State<ServerState>) -> RainbowTemplate {
+    let (_, icon_name) = helper::script_controller::web::get_navbar_info();
+    let is_running = helper::script_controller::is_running();
+    let mode = &*state.activated_mode.lock().unwrap() == "rainbow";
+
+    match cookies.get_private("username") {
+        Some(username) => {
+            match &*state.logged_in_user.lock().unwrap() {
+                Some(logged_user) => {
+                    if logged_user == username.value() {
+                        match cookies.get_private("usertype") {
+                            Some(usertype) => {
+                                if usertype.value() == "admin" {
+                                    return RainbowTemplate {
+                                        admin: true,
+                                        logged_in: true,
+                                        icon_name: icon_name.to_string(),
+                                        activated: mode,
+                                        is_running: is_running,
+                                    }
+                                } else {
+                                    return RainbowTemplate {
+                                        admin: false,
+                                        logged_in: true,
+                                        icon_name: icon_name.to_string(),
+                                        activated: mode,
+                                        is_running: is_running,
+                                    }
+                                }
+                            },
+                            None => {}
+                        }
+                    }
+                },
+                None => {}
+            }
+        },
+        None => {}
+    }
+
+    RainbowTemplate {
+        admin: false,
+        logged_in: false,
+        icon_name: icon_name.to_string(),
+        activated: mode,
         is_running: is_running,
     }
 }
@@ -362,7 +435,7 @@ fn send(form: Form<Item>) -> Redirect {
         map.insert("type", "set");
         map.insert("var", &variable_name);
         map.insert("value", &variable_value);
-        helper::script_controller::send_message(&socket, map);
+        helper::script_controller::send_message_str(&socket, map);
 
         match socket.recv_bytes(0) {
             Ok(value) => {
@@ -376,15 +449,16 @@ fn send(form: Form<Item>) -> Redirect {
 }
 
 fn rocket() -> rocket::Rocket {
-    // let _socket = helper::raspberry::bluetooth::init();
+    // let _socket = helper::raspberry::bluetooth::init(); // TODO: get bluetooth status
 
     let server_state = ServerState {
         logged_in_user: Mutex::new(None),
+        activated_mode: Mutex::new("demo".to_string()),
     };
 
     rocket::ignite()
         .mount("/", StaticFiles::from("static"))
-        .mount("/", routes![index, demo, maintenance, send, login, login_with_error, login_form, logout])
+        .mount("/", routes![index, favicon, demo, rainbow, maintenance, send, login, login_with_error, login_form, logout])
         .manage(server_state)
 }
 

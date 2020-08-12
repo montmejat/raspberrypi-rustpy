@@ -54,6 +54,7 @@ pub mod script_controller {
     use serde::{Deserialize, Serialize};
     use serde_cbor::to_vec;
     use serde_cbor::from_slice;
+    use serde_json::Value;
     use std::collections::HashMap;
     use std::process::Command;
     use std::str::from_utf8;
@@ -87,7 +88,12 @@ pub mod script_controller {
         socket
     }
 
-    pub fn send_message(socket: &Socket, data: HashMap<&str, &str>) {
+    pub fn send_message_str(socket: &Socket, data: HashMap<&str, &str>) {
+        let encoded = to_vec(&data);
+        socket.send(&encoded.unwrap(), 0).unwrap();
+    }
+
+    pub fn send_message_array(socket: &Socket, data: HashMap<&str, Value>) {
         let encoded = to_vec(&data);
         socket.send(&encoded.unwrap(), 0).unwrap();
     }
@@ -96,7 +102,7 @@ pub mod script_controller {
         let mut data = HashMap::new();
         data.insert("type", "get");
         data.insert("value", "state");
-        send_message(&socket, data);
+        send_message_str(&socket, data);
         
         match socket.recv_bytes(0) {
             Ok(value) => {
@@ -111,7 +117,7 @@ pub mod script_controller {
         let mut data = HashMap::new();
         data.insert("type", "get");
         data.insert("value", "settings");
-        send_message(&socket, data);
+        send_message_str(&socket, data);
         
         match socket.recv_bytes(0) {
             Ok(value) => {
@@ -143,7 +149,7 @@ pub mod script_controller {
         let mut data = HashMap::new();
         data.insert("type", "get");
         data.insert("value", "leds");
-        send_message(&socket, data);
+        send_message_str(&socket, data);
 
         match socket.recv_bytes(0) {
             Ok(value) => {
@@ -169,14 +175,14 @@ pub mod script_controller {
         let mut data = HashMap::new();
         data.insert("type", "action");
         data.insert("value", "pause");
-        send_message(&socket, data);
+        send_message_str(&socket, data);
     }
 
     pub fn unpause(socket: &Socket) {
         let mut data = HashMap::new();
         data.insert("type", "action");
         data.insert("value", "unpause");
-        send_message(&socket, data);
+        send_message_str(&socket, data);
     }
 
     pub mod web {
@@ -224,6 +230,7 @@ pub mod websocket {
     use futures_util::{SinkExt, StreamExt};
     use std::net::SocketAddr;
     use std::time::Duration;
+    use std::collections::HashMap;
     use tokio::net::TcpStream;
     use tokio_tungstenite::{accept_async, tungstenite::Error};
     use tungstenite::{Message, Result};
@@ -270,6 +277,44 @@ pub mod websocket {
                                             let socket = helper::script_controller::connect();
                                             helper::script_controller::unpause(&socket);
                                         },
+                                        "\"set_leds\"" => {
+                                            let socket = helper::script_controller::connect();
+                                            
+                                            let mut data: HashMap<&str, Value> = HashMap::new();
+                                            let mut led_datas: Vec<HashMap<&str, String>> = Vec::new();
+                                            let leds: Vec<Value> = value["leds"].as_array().unwrap().to_vec();
+
+                                            for led in leds {
+                                                let mut led_data: HashMap<&str, String> = HashMap::new();
+                                                let data = led.as_object().unwrap();
+                                                
+                                                let var = data["var"].to_string().replace("\"", "");
+                                                let red = data["red"].to_string().replace("\"", "");
+                                                let green = data["green"].to_string().replace("\"", "");
+                                                let blue = data["blue"].to_string().replace("\"", "");
+
+                                                led_data.insert("var", var);
+                                                led_data.insert("red", red);
+                                                led_data.insert("blue", blue);
+                                                led_data.insert("green", green);
+
+                                                led_datas.push(led_data);
+                                            }
+
+                                            data.insert("type", json!("set"));
+                                            data.insert("leds", json!(led_datas));
+
+                                            helper::script_controller::send_message_array(&socket, data);
+                                        },
+                                        "\"set_mode\"" => {
+                                            let socket = helper::script_controller::connect();
+
+                                            let mut data: HashMap<&str, &str> = HashMap::new();
+                                            data.insert("type", "set");
+                                            data.insert("mode", value["mode"].as_str().unwrap());
+
+                                            helper::script_controller::send_message_str(&socket, data);
+                                        }
                                         _ => {}
                                     }
                                 },

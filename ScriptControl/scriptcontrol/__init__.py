@@ -1,9 +1,9 @@
 import os, signal, sys, cbor, zmq, hashlib, time, serial, struct
-from threading import Thread
+from threading import Thread, Lock
 from types import ModuleType
 
 sys.path.insert(1, '/home/pi/raspberrypi-rustpy/ScriptControl/scriptcontrol/demo/')
-import demo
+import luminolib, demo, rainbow
 
 class CommunicationsThread(Thread):
     def __init__(self, socket, print_debug=True, send_debug_to_client=True):
@@ -13,8 +13,8 @@ class CommunicationsThread(Thread):
         self.print_debug = print_debug
         self.send_debug_to_client = send_debug_to_client
         self.hash_key = hashlib.sha256('test'.encode()).hexdigest()
-        self.leds_count = 64
-        self.leds = demo.Led(self.leds_count) # TODO: make sure that this object stays in sync to the one at demo.py
+        self.leds_count = 22
+        self.leds = luminolib.Led(self.leds_count)
 
         try:
             self.port = serial.Serial("/dev/rfcomm0", baudrate=9600)
@@ -34,8 +34,24 @@ class CommunicationsThread(Thread):
             
             self.port.write(b'?') # stop message
 
+    def sync_leds(self, leds):
+        lock = Lock()
+
+        lock.acquire()
+        self.leds = leds
+        self.port.write(b'#')
+
+        for i in range(self.leds_count):
+            led = self.leds.get(i)
+            self.port.write(struct.pack('=B', led.green))
+            self.port.write(struct.pack('=B', led.red))
+            self.port.write(struct.pack('=B', led.blue))
+
+        self.port.write(b'?')
+        lock.release()
+
     def run(self):
-        global pause
+        global pause, mode
 
         while True:
             event_count = self.socket.poll(1000)
@@ -60,7 +76,11 @@ class CommunicationsThread(Thread):
                         if key == self.hash_key:
                             message = 'Restarting'
                             pause = False
-                            demo.start()
+
+                            if mode == "demo":
+                                demo.start()
+                            else:
+                                rainbow.start()
                         else:
                             message = 'Key not correct!'
                         
@@ -92,16 +112,28 @@ class CommunicationsThread(Thread):
                         self.socket.send(message)
                         continue
                     elif data['value'] == 'settings':
-                        variable_names = [variable for variable in dir(demo.param) if not (variable.startswith('__') or variable == 'SliderValue')]
-                        variables = {}
+                        if mode == "demo":
+                            variable_names = [variable for variable in dir(demo.param) if not (variable.startswith('__') or variable == 'SliderValue')]
+                            variables = {}
 
-                        for variable_name in variable_names:
-                            variable = getattr(demo.param, variable_name)
+                            for variable_name in variable_names:
+                                variable = getattr(demo.param, variable_name)
 
-                            if type(variable) == demo.Settings.SliderValue:
-                                variables[variable_name] = str(str(variable.min) + ':' + str(variable.value) + ':' + str(variable.max))
-                            else:
-                                variables[variable_name] = str(variable)
+                                if type(variable) == luminolib.Settings.SliderValue:
+                                    variables[variable_name] = str(str(variable.min) + ':' + str(variable.value) + ':' + str(variable.max))
+                                else:
+                                    variables[variable_name] = str(variable)
+                        else:
+                            variable_names = [variable for variable in dir(rainbow.param) if not (variable.startswith('__') or variable == 'SliderValue')]
+                            variables = {}
+
+                            for variable_name in variable_names:
+                                variable = getattr(rainbow.param, variable_name)
+
+                                if type(variable) == luminolib.Settings.SliderValue:
+                                    variables[variable_name] = str(str(variable.min) + ':' + str(variable.value) + ':' + str(variable.max))
+                                else:
+                                    variables[variable_name] = str(variable)
                         
                         print("   * CLIENT : requested settings '", variables, " *")
 
@@ -117,14 +149,36 @@ class CommunicationsThread(Thread):
                         message = cbor.dumps(leds_as_dict)
                         self.socket.send(message)
                         continue
-
+                    elif data['value'] == 'mode':
+                        message = cbor.dumps(mode)
+                        self.socket.send(message)
+                        continue
+                    
                 elif data['type'] == 'call':
                     function_name = data['value']
                     message = 'Calling ' + function_name
                     getattr(demo, function_name)()
 
                 elif data['type'] == 'set':
-                    if not data['var'].contains('led'): 
+                    if 'leds' in data.keys():
+                        leds_modified = '['
+                        for led_data in data["leds"]:
+                            led_number = led_data['var'].replace('led', '')
+                            led = self.leds.get(int(led_number))
+                            led.green = int(led_data['green'])
+                            led.red = int(led_data['red'])
+                            led.blue = int(led_data['blue'])
+                            leds_modified = leds_modified + ' ' + str(led_number)
+                        leds_modified = leds_modified + ' ]'
+
+                        self.port.write(b'#')
+                        for i in range(self.leds_count):
+                            led = self.leds.get(i)
+                            self.port.write(struct.pack('=B', led.green))
+                            self.port.write(struct.pack('=B', led.red))
+                            self.port.write(struct.pack('=B', led.blue))
+                        self.port.write(b'?')
+                    elif 'var' in data.keys():
                         var_name = data['var']
                         value = data['value']
                         message = 'Modifying ' + var_name + ' to ' + value
@@ -154,21 +208,10 @@ class CommunicationsThread(Thread):
                             else:
                                 value = var_type(value)
                                 setattr(demo.param, var_name, value)
-                    else:
-                        led_number = data['var'].replace('led', '')
-                        led = self.leds.get(int(led_number))
-                        led.green = data['green']
-                        led.red = data['red']
-                        led.blue = data['blue']
-
-                        self.port.write(b'#')
-                        for i in range(self.leds_count):
-                            led = self.leds.get(i)
-                            self.port.write(struct.pack('=B', led.green))
-                            self.port.write(struct.pack('=B', led.red))
-                            self.port.write(struct.pack('=B', led.blue))
-                        self.port.write(b'?')
-
+                    elif 'mode' in data.keys():
+                        mode = data['mode']
+                        message = '      Mode changed to ' + mode
+                        
                 else:
                     message = 'Command not correct'
 
@@ -180,10 +223,15 @@ class CommunicationsThread(Thread):
 
 
 def signal_handler(sig, frame):
-    print(' CLOSING : ** Closing Script Control ** ')
+    global mode
 
+    print(' CLOSING : ** Closing Script Control ** ')
+    
     try:
-        demo.end()
+        if mode == "demo":
+            demo.end()
+        else:
+            rainbow.end()
     except AttributeError:
         print("No end() method")
 
@@ -222,7 +270,8 @@ def load_variables(filename='demo_vars'):
 
 
 def start_server(print_debug=True):
-    global port
+    global port, mode
+    mode = "demo"
 
     if print_debug:
         print(' ** Lamp Control Started ** ')
@@ -233,19 +282,25 @@ def start_server(print_debug=True):
     socket.bind("tcp://*:5555")
 
     try:
-        demo.start()
+        if mode == "demo":
+            demo.start()
+        else:
+            rainbow.start()
     except AttributeError:
         print("Warning, 'start' function does not exists.")
 
-    if not 'loop' in dir(demo):
+    if mode == "demo" and not 'loop' in dir(demo):
         print("Error, demo.py needs a 'loop' function.")
+        sys.exit(0)
+    elif not 'loop' in dir(rainbow):
+        print("Error, rainbow.py needs a 'loop' function.")
         sys.exit(0)
     
     return socket
 
 
 def app_loop(server_socket, print_debug=True, send_debug_to_client=True):
-    global pause
+    global pause, mode
     pause = False
 
     thread = CommunicationsThread(server_socket, print_debug, send_debug_to_client)
@@ -253,4 +308,11 @@ def app_loop(server_socket, print_debug=True, send_debug_to_client=True):
 
     while True:
         if not pause:
-            demo.loop()
+            if mode == "demo":
+                demo.loop()
+                thread.sync_leds(demo.led_matrix)
+            elif mode == "rainbow":
+                rainbow.loop()
+                thread.sync_leds(rainbow.led_matrix)
+            else:
+                print("UNKNOWED MODE!!")

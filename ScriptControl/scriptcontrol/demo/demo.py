@@ -1,55 +1,37 @@
 from gpiozero import LED
 from time import sleep
 from random import randint
-import rpipy
 
-# LED plugged to the RasperryPi
-led = LED(26)
+import rpipy # custom rust written library for python
+import luminolib # python objects for the leds and the settings
 
-# LED matrix to control via the webserver
-class Led:
-    def __init__(self, leds_count):
-        self.leds = []
-        self.leds_count = leds_count
-
-        for i in range(self.leds_count):
-            self.leds.append(self.Led(255, 0, 0))
-
-    def get(self, i):
-        return self.leds[i]
-
-    class Led:
-        def __init__(self, green, red, blue):
-            self.green = green
-            self.red = red
-            self.blue = blue
-
-# Personnal settings to also control via the webserver
-class Settings:
-    def __init__(self):
-        self.my_var = 50
-        self.my_message = "Hello!"
-        self.slider_var = self.SliderValue(0, 100, 50)
-        self.another_slider = self.SliderValue(10, 40, 20)
-
-    class SliderValue:
-        def __init__(self, min, max, value=0):
-            self.min = min
-            self.max = max
-            self.value = value
-
-param = Settings()
-led_matrix = Led(64)
+param = luminolib.Settings() # settings you want to be able to modify on the webserver
+led_matrix = luminolib.Led(22) # the leds you can control
+turned_on_light = 0
 
 def start():
     print("Device info:", rpipy.get_device_info(), "| temp:", rpipy.measure_temp())
 
 def loop():
     print("Looping in demo! My var =", param.my_var, "| My message:", param.my_message, "| My slider value:", param.slider_var.value)
-    led.on()
-    sleep(1)
-    led.off()
-    sleep(1)
+    global turned_on_light
+
+    led = led_matrix.get(turned_on_light)
+    led.green = 5
+    led.red = 5
+    led.blue = 5
+
+    if turned_on_light > 0:
+        led = led_matrix.get(turned_on_light - 1)
+        led.green = 0
+        led.red = 0
+        led.blue = 0
+
+    turned_on_light += 1
+    if turned_on_light > 21:
+        turned_on_light = 0
+
+    # sleep(5)
     param.my_var += 1
     print("Ending loop in demo!")
 

@@ -54,6 +54,7 @@ Commands you can send:
 Basic control:
 
 - `{ 'type': 'get', 'value': 'state' }`: get the state of the controller. Returns a CBOR encoded dictionnary `{ 'paused': 'true/false' }`
+- `{ 'type': 'get', 'value': 'mode'}`: get the current selected mode for the LEDs.
 - `{ 'type': 'get', 'value': 'settings'}`: get the names and values of the variables saved in the `Settings` class. Returns a CBOR encoded dictionnary `{ 'var1': 'value', 'var2': 'value' }`
 - `{ 'type': 'get', 'value': 'leds' }`
 - `{ 'type': 'action', 'value': 'pause' }`: pause the execution of `loop()`.
@@ -66,7 +67,8 @@ More options:
 
 - `{ 'type': 'call', 'value': 'my_func' }`: launch custom function defined in `demo.py`.
 - `{ 'type': 'set', 'var': 'my_val', 'value': 50, 'cast': '[int|float|bool|str]' }`: change a variable to the given value. Passing the type in `cast` is optionnal.
-- `{ 'type': 'set', 'var': 'ledx', 'red': x, 'blue': x, 'green': x }`
+- `{ 'type': 'set', 'leds': [ {'var': 'ledx', 'red': x, 'blue': x, 'green': x}, {'var': 'ledx', 'red': x, 'blue': x, 'green': x}, ... ] }`
+- `{ 'type': 'set', 'mode': 'x'}`: the mode can be either 'demo' or 'rainbow'.
 
 ### Test it yourself
 

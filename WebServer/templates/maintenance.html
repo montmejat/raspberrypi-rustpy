@@ -6,7 +6,6 @@
 <script src="javascript/socket_alerts.js"></script>
 <script src="bootstrap-4.3.1-dist/js/bootstrap.min.js"></script>
 <link rel="stylesheet" href="bootstrap-4.3.1-dist/css/bootstrap.min.css">
-<link rel="stylesheet" href="css/sliders.css">
 
 {% if logged_in && admin -%}
     <script>
@@ -29,14 +28,21 @@
             };
 
             document.getElementById("send_button").onclick = function() {
+                data = { "command": "set_leds", "leds": [] };
+
                 for (i = 0; i < {{ leds.len() }}; i++) {
-                    green = document.getElementById("led_" + i + "_green");
-                    red = document.getElementById("led_" + i + "_red");
-                    blue = document.getElementById("led_" + i + "_blue");
+                    green = document.getElementById("led_" + i + "_green").value;
+                    red = document.getElementById("led_" + i + "_red").value;
+                    blue = document.getElementById("led_" + i + "_blue").value;
+
+                    if (green != document.getElementById("led_" + i + "_green_old").innerText ||
+                            red != document.getElementById("led_" + i + "_red_old").innerText ||
+                            blue != document.getElementById("led_" + i + "_blue_old").innerText) {
+                        data["leds"].push({"var": "led" + i, "red": red, "blue": blue, "green": green });
+                    }
                 }
 
-                command = "";
-                send_command(socket, command);
+                socket.send(JSON.stringify(data));
             }
         });
     </script>
@@ -54,10 +60,22 @@
     
             <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                 <div class="navbar-nav">
-                    <a class="nav-item nav-link" href="/">Home</a>
-                    <a class="nav-item nav-link" href="/demo">Demo</a>
+                    <li class="nav-item">
+                        <a class="nav-item nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Modes
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <a class="dropdown-item" href="/demo">Demo</a>
+                        <a class="dropdown-item" href="/rainbow">Rainbow</a>
+                    </div>
+                    </li>
                     {% if admin %}
-                        <a class="nav-item nav-link active" href="/maintenance">Maintenance</a>
+                        <li class="nav-item">
+                            <a class="nav-item nav-link active" href="/maintenance">Maintenance</a>
+                        </li>
                     {% endif %}
                 </div>
             </div>
@@ -73,50 +91,48 @@
 
     <div class="container">
         <div class="jumbotron">
-            <form action="/demo/send" method="post">
-                <h1 class="display-4" style="font-size:2.5rem">Settings</h1>
-                <hr>
-                {% if is_running -%}
-                    <div class="row">
-                        <div class="col-3"></div>
-                        <div class="col-3 text-success">Green</div>
-                        <div class="col-3 text-danger">Red</div>
-                        <div class="col-3 text-primary">Blue</div>
-                    </div>
-
-                    {% for led in leds %}
-                        <div class="row">
-                            <div class="col-3">Led {{ led.name }}</div>
-                            <div class="input-group col-3">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text">{{ led.green }}</span>
-                                </div>
-                                <input type="text" class="form-control" id="led_{{ led.name }}_green" value="{{ led.green }}">
-                            </div>
-                            <div class="input-group col-3">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text">{{ led.red }}</span>
-                                </div>
-                                <input type="text" class="form-control" id="led_{{ led.name }}_red" value="{{ led.red }}">
-                            </div>
-                            <div class="input-group col-3">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text">{{ led.blue }}</span>
-                                </div>
-                                <input type="text" class="form-control" id="led_{{ led.name }}_blue" value="{{ led.blue }}">
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% else -%}
-                    <p id="server_off_message">The Python Script Controller is not running.</p>
-                {% endif -%}
-                <hr>
-                {% if is_running -%}
-                <div class="text-right">
-                    <button id="send_button" class="btn btn-primary">Send</button>
+            <h1 class="display-4" style="font-size:2.5rem">Settings</h1>
+            <hr>
+            {% if is_running -%}
+                <div class="row">
+                    <div class="col-3"></div>
+                    <div class="col-3 text-success">Green</div>
+                    <div class="col-3 text-danger">Red</div>
+                    <div class="col-3 text-primary">Blue</div>
                 </div>
-                {% endif -%}
-            </form>
+
+                {% for led in leds %}
+                    <div class="row">
+                        <div class="col-3">Led {{ led.name }}</div>
+                        <div class="input-group col-3">
+                            <div class="input-group-prepend">
+                                <span style="width: 52px" id="led_{{ led.name }}_green_old" class="input-group-text">{{ led.green }}</span>
+                            </div>
+                            <input type="number" min="0" max="255" class="form-control" id="led_{{ led.name }}_green" value="{{ led.green }}">
+                        </div>
+                        <div class="input-group col-3">
+                            <div class="input-group-prepend">
+                                <span style="width: 52px" id="led_{{ led.name }}_red_old" class="input-group-text">{{ led.red }}</span>
+                            </div>
+                            <input type="number" min="0" max="255" class="form-control" id="led_{{ led.name }}_red" value="{{ led.red }}">
+                        </div>
+                        <div class="input-group col-3">
+                            <div class="input-group-prepend">
+                                <span style="width: 52px" id="led_{{ led.name }}_blue_old" class="input-group-text">{{ led.blue }}</span>
+                            </div>
+                            <input type="number" min="0" max="255" class="form-control" id="led_{{ led.name }}_blue" value="{{ led.blue }}">
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else -%}
+                <p id="server_off_message">The Python Script Controller is not running.</p>
+            {% endif -%}
+            <hr>
+            {% if is_running -%}
+            <div class="text-right">
+                <button id="send_button" class="btn btn-primary">Send</button>
+            </div>
+            {% endif -%}
         </div>
     </div>
 {% else if !logged_in -%}

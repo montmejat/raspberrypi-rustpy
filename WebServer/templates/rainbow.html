@@ -14,7 +14,7 @@
         }
 
         $(document).ready(function() {
-            socket = create_socket_connection("192.168.0.16", "3012", "demo");
+            socket = create_socket_connection("192.168.0.16", "3012", "rainbow");
 
             custom_on_message_call = function(data) {
                 try {
@@ -26,16 +26,14 @@
                     if (data.is_pyscript_running && server_paragraph != undefined) {
                         location.reload();
                     }
-                    
-                    data.variables.sliders.forEach(update);
-                    data.variables.others.forEach(update);
                 } catch(e) {
                     create_alert("primary", "New message", `${data}`);
                 }
             };
 
             document.getElementById("activate").onclick = function() {
-                socket.send(JSON.stringify({"command": "set_mode", "mode": "demo"}));
+                socket.send(JSON.stringify({"command": "set_mode", "mode": "rainbow"}));
+                document.getElementById("activate").disabled = true;
             };
         });
     </script>
@@ -84,58 +82,21 @@
 
     <div class="container">
         <div class="jumbotron">
-            <form action="/demo/send" method="post">
-                <div class="row">
-                    <div class="col">
-                        <h1 class="display-4" style="font-size:2.5rem">Settings</h1>
+            <div class="row">
+                <div class="col">
+                    <h1 class="display-4" style="font-size:2.5rem">Settings</h1>
+                </div>
+                {% if is_running -%}
+                    <div class="col text-right">
+                        <button id="activate" class="btn btn-success" {% if activated -%} disabled {% endif -%}>Activate</button>
                     </div>
-                    {% if is_running -%}
-                        <div class="col text-right">
-                            <button id="activate" class="btn btn-success" {% if activated -%} disabled {% endif -%}>Activate</button>
-                        </div>
-                    {% endif -%}
-                </div>
-                <hr>
-                {% if is_running -%}
-                    {% for slider in settings_sliders %}
-                        <div class="row pb-2">
-                            <div class="col-3">
-                                <b>{{ slider.name }}</b>
-                            </div>
-                            <div id="{{ slider.name }}" class="col-2 col-form-label">
-                                {{ slider.value }}
-                            </div>
-                            <div class="col-7 pl-0" style="height: 25px; background: #e9ecef; display: flex; align-items: center;">
-                                <span class="badge badge-secondary">{{ slider.min }}</span>
-                                <input name="{{ slider.name }}" type="range" min="{{ slider.min }}" max="{{ slider.max }}" value="{{ slider.value }}" class="form-control-range">
-                                <span class="badge badge-secondary">{{ slider.max }}</span>
-                            </div>
-                        </div>
-                    {% endfor %}
-
-                    {% for variable in settings_others %}
-                        <div class="row pb-2">
-                            <div class="col-3 col-form-label">
-                                <b>{{ variable.name }}</b>
-                            </div>
-                            <div id="{{ variable.name }}" class="col-2 col-form-label">
-                                {{ variable.value }}
-                            </div>
-                            <div class="col-7 pl-0">
-                                <input name="{{ variable.name }}" class="form-control" type="text" value="{{ variable.value }}">
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% else -%}
-                    <p id="server_off_message">The Python Script Controller is not running.</p>
                 {% endif -%}
-                <hr>
-                {% if is_running -%}
-                <div class="text-right">
-                    <button type="submit" class="btn btn-primary">Send</button>
-                </div>
-                {% endif -%}
-            </form>
+            </div>
+            <hr>
+            {% if is_running -%}
+            {% else -%}
+                <p id="server_off_message">The Python Script Controller is not running.</p>
+            {% endif -%}
         </div>
     </div>
 {% else -%}
