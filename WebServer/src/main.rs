@@ -48,6 +48,16 @@ struct RainbowTemplate {
 }
 
 #[derive(Template)]
+#[template(path = "cosmic.html")]
+struct CosmicTemplate {
+    admin: bool,
+    logged_in: bool,
+    icon_name: String,
+    activated: bool,
+    is_running: bool,
+}
+
+#[derive(Template)]
 #[template(path = "index.html")]
 struct HomeTemplate {
     admin: bool,
@@ -263,6 +273,56 @@ fn rainbow(mut cookies: Cookies, state: State<ServerState>) -> RainbowTemplate {
     }
 }
 
+#[get("/cosmic")]
+fn cosmic(mut cookies: Cookies, state: State<ServerState>) -> CosmicTemplate {
+    let (_, icon_name) = helper::script_controller::web::get_navbar_info();
+    let is_running = helper::script_controller::is_running();
+    let mode = &*state.activated_mode.lock().unwrap() == "cosmic";
+
+    match cookies.get_private("username") {
+        Some(username) => {
+            match &*state.logged_in_user.lock().unwrap() {
+                Some(logged_user) => {
+                    if logged_user == username.value() {
+                        match cookies.get_private("usertype") {
+                            Some(usertype) => {
+                                if usertype.value() == "admin" {
+                                    return CosmicTemplate {
+                                        admin: true,
+                                        logged_in: true,
+                                        icon_name: icon_name.to_string(),
+                                        activated: mode,
+                                        is_running: is_running,
+                                    }
+                                } else {
+                                    return CosmicTemplate {
+                                        admin: false,
+                                        logged_in: true,
+                                        icon_name: icon_name.to_string(),
+                                        activated: mode,
+                                        is_running: is_running,
+                                    }
+                                }
+                            },
+                            None => {}
+                        }
+                    }
+                },
+                None => {}
+            }
+        },
+        None => {}
+    }
+
+    CosmicTemplate {
+        admin: false,
+        logged_in: false,
+        icon_name: icon_name.to_string(),
+        activated: mode,
+        is_running: is_running,
+    }
+}
+
 #[get("/maintenance")]
 fn maintenance(mut cookies: Cookies, state: State<ServerState>) -> MaintenanceTemplate {
     let is_running = helper::script_controller::is_running();
@@ -458,7 +518,7 @@ fn rocket() -> rocket::Rocket {
 
     rocket::ignite()
         .mount("/", StaticFiles::from("static"))
-        .mount("/", routes![index, favicon, demo, rainbow, maintenance, send, login, login_with_error, login_form, logout])
+        .mount("/", routes![index, favicon, demo, rainbow, cosmic, maintenance, send, login, login_with_error, login_form, logout])
         .manage(server_state)
 }
 

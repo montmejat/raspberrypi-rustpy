@@ -3,7 +3,10 @@ from threading import Thread, Lock
 from types import ModuleType
 
 sys.path.insert(1, '/home/pi/raspberrypi-rustpy/ScriptControl/scriptcontrol/demo/')
-import luminolib, demo, rainbow
+import luminolib
+
+mode = "demo"
+mode_library = __import__(mode)
 
 class CommunicationsThread(Thread):
     def __init__(self, socket, print_debug=True, send_debug_to_client=True):
@@ -51,7 +54,7 @@ class CommunicationsThread(Thread):
         lock.release()
 
     def run(self):
-        global pause, mode
+        global pause, mode, mode_library
 
         while True:
             event_count = self.socket.poll(1000)
@@ -77,10 +80,7 @@ class CommunicationsThread(Thread):
                             message = 'Restarting'
                             pause = False
 
-                            if mode == "demo":
-                                demo.start()
-                            else:
-                                rainbow.start()
+                            mode_library.start()
                         else:
                             message = 'Key not correct!'
                         
@@ -112,28 +112,16 @@ class CommunicationsThread(Thread):
                         self.socket.send(message)
                         continue
                     elif data['value'] == 'settings':
-                        if mode == "demo":
-                            variable_names = [variable for variable in dir(demo.param) if not (variable.startswith('__') or variable == 'SliderValue')]
-                            variables = {}
+                        variable_names = [variable for variable in dir(mode_library.param) if not (variable.startswith('__') or variable == 'SliderValue')]
+                        variables = {}
 
-                            for variable_name in variable_names:
-                                variable = getattr(demo.param, variable_name)
+                        for variable_name in variable_names:
+                            variable = getattr(mode_library.param, variable_name)
 
-                                if type(variable) == luminolib.Settings.SliderValue:
-                                    variables[variable_name] = str(str(variable.min) + ':' + str(variable.value) + ':' + str(variable.max))
-                                else:
-                                    variables[variable_name] = str(variable)
-                        else:
-                            variable_names = [variable for variable in dir(rainbow.param) if not (variable.startswith('__') or variable == 'SliderValue')]
-                            variables = {}
-
-                            for variable_name in variable_names:
-                                variable = getattr(rainbow.param, variable_name)
-
-                                if type(variable) == luminolib.Settings.SliderValue:
-                                    variables[variable_name] = str(str(variable.min) + ':' + str(variable.value) + ':' + str(variable.max))
-                                else:
-                                    variables[variable_name] = str(variable)
+                            if type(variable) == luminolib.Settings.SliderValue:
+                                variables[variable_name] = str(str(variable.min) + ':' + str(variable.value) + ':' + str(variable.max))
+                            else:
+                                variables[variable_name] = str(variable)
                         
                         print("   * CLIENT : requested settings '", variables, " *")
 
@@ -157,7 +145,7 @@ class CommunicationsThread(Thread):
                 elif data['type'] == 'call':
                     function_name = data['value']
                     message = 'Calling ' + function_name
-                    getattr(demo, function_name)()
+                    getattr(mode_library, function_name)()
 
                 elif data['type'] == 'set':
                     if 'leds' in data.keys():
@@ -187,29 +175,31 @@ class CommunicationsThread(Thread):
                             try:
                                 if data['cast'] == 'int':
                                     value = int(value)
-                                    setattr(demo.param, var_name, value)
+                                    setattr(mode_library.param, var_name, value)
                                 elif data['cast'] == 'float':
                                     value = float(value)
-                                    setattr(demo.param, var_name, value)
+                                    setattr(mode_library.param, var_name, value)
                                 elif data['cast'] == 'str':
                                     value = str(value)
-                                    setattr(demo.param, var_name, value)
+                                    setattr(mode_library.param, var_name, value)
                                 elif data['cast'] == 'bool':
                                     value = bool(value)
-                                    setattr(demo.param, var_name, value)
+                                    setattr(mode_library.param, var_name, value)
                             except ValueError:
                                 message = '      Cannot modify' + var_name + 'to' + value, 'of the type' + data['cast']
                         else:
-                            var_type = type(getattr(demo.param, var_name))
-                            if var_type == demo.Settings.SliderValue:
-                                slider = getattr(demo.param, var_name)
+                            var_type = type(getattr(mode_library.param, var_name))
+                            if var_type == mode_library.Settings.SliderValue:
+                                slider = getattr(mode_library.param, var_name)
                                 slider.value = value
-                                setattr(demo.param, var_name, slider)
+                                setattr(mode_library.param, var_name, slider)
                             else:
                                 value = var_type(value)
-                                setattr(demo.param, var_name, value)
+                                setattr(mode_library.param, var_name, value)
                     elif 'mode' in data.keys():
                         mode = data['mode']
+                        mode_library = __import__(mode)
+                        mode_library.start()
                         message = '      Mode changed to ' + mode
                         
                 else:
@@ -228,10 +218,7 @@ def signal_handler(sig, frame):
     print(' CLOSING : ** Closing Script Control ** ')
     
     try:
-        if mode == "demo":
-            demo.end()
-        else:
-            rainbow.end()
+        mode_library.end()
     except AttributeError:
         print("No end() method")
 
@@ -239,12 +226,14 @@ def signal_handler(sig, frame):
 
 
 def save_variables(filename='demo_vars'):
+    global mode_library
+
     outfile = open(filename, 'wb')
-    variable_names = [variable for variable in dir(demo) if not variable.startswith('__')]
+    variable_names = [variable for variable in dir(mode_library) if not variable.startswith('__')]
     variables = {}
 
     for variable_name in variable_names:
-        variable = getattr(demo, variable_name)
+        variable = getattr(mode_library, variable_name)
         if not callable(variable) and not isinstance(variable, ModuleType) and (type(variable) in [ int, bool, str, str, dict, list ]):
             try:
                 variables[variable_name] = variable
@@ -264,14 +253,13 @@ def load_variables(filename='demo_vars'):
     variables = cbor.load(infile)
 
     for var in variables:
-        setattr(demo, var, variables[var])
+        setattr(mode_library, var, variables[var])
 
     infile.close()
 
 
 def start_server(print_debug=True):
     global port, mode
-    mode = "demo"
 
     if print_debug:
         print(' ** Lamp Control Started ** ')
@@ -282,18 +270,12 @@ def start_server(print_debug=True):
     socket.bind("tcp://*:5555")
 
     try:
-        if mode == "demo":
-            demo.start()
-        else:
-            rainbow.start()
+        mode_library.start()
     except AttributeError:
         print("Warning, 'start' function does not exists.")
 
-    if mode == "demo" and not 'loop' in dir(demo):
-        print("Error, demo.py needs a 'loop' function.")
-        sys.exit(0)
-    elif not 'loop' in dir(rainbow):
-        print("Error, rainbow.py needs a 'loop' function.")
+    if not 'loop' in dir(mode_library):
+        print("Error, mode_library.py needs a 'loop' function.")
         sys.exit(0)
     
     return socket
@@ -308,11 +290,5 @@ def app_loop(server_socket, print_debug=True, send_debug_to_client=True):
 
     while True:
         if not pause:
-            if mode == "demo":
-                demo.loop()
-                thread.sync_leds(demo.led_matrix)
-            elif mode == "rainbow":
-                rainbow.loop()
-                thread.sync_leds(rainbow.led_matrix)
-            else:
-                print("UNKNOWED MODE!!")
+            mode_library.loop()
+            thread.sync_leds(mode_library.led_matrix)
