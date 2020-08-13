@@ -19,10 +19,7 @@ class Led:
 # Personnal settings to also control via the webserver
 class Settings:
     def __init__(self):
-        self.my_var = 50
-        self.my_message = "Hello!"
-        self.slider_var = self.SliderValue(0, 100, 50)
-        self.another_slider = self.SliderValue(10, 40, 20)
+        pass
 
     class SliderValue:
         def __init__(self, min, max, value=0):

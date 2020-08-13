@@ -1,5 +1,6 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lumino: Demo</title>
 </head>
 
 <script src="javascript/jquery-3.5.1.min.js"></script>
@@ -17,25 +18,25 @@
             socket = create_socket_connection("192.168.0.16", "3012", "demo");
 
             custom_on_message_call = function(data) {
-                try {
-                    data = JSON.parse(data);
-                    
-                    document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/${data.navbar.icon_name}.svg`;
+                data = JSON.parse(data);
 
-                    server_paragraph = document.getElementById("server_off_message");
-                    if (data.is_pyscript_running && server_paragraph != undefined) {
-                        location.reload();
-                    }
-                    
+                document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/${data.navbar.icon_name}.svg`;
+
+                server_paragraph = document.getElementById("server_off_message");
+                if (data.is_pyscript_running && server_paragraph != undefined) {
+                    location.reload();
+                }
+                
+                {% if activated -%}
                     data.variables.sliders.forEach(update);
                     data.variables.others.forEach(update);
-                } catch(e) {
-                    create_alert("primary", "New message", `${data}`);
-                }
+                {% endif -%}
             };
 
             document.getElementById("activate").onclick = function() {
                 socket.send(JSON.stringify({"command": "set_mode", "mode": "demo"}));
+                document.getElementById("activate").disabled = true;
+                location.reload();
             };
         });
     </script>
@@ -60,8 +61,8 @@
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Modes
                     </a>
-                    <div class="dropdown-menu active" aria-labelledby="navbarDropdown">
-                        <a class="dropdown-item" href="/demo">Demo</a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <a class="dropdown-item active" href="/demo">Demo</a>
                         <a class="dropdown-item" href="/rainbow">Rainbow</a>
                         <a class="dropdown-item" href="/cosmic">Cosmic Radiation Map</a>
                     </div>
@@ -85,19 +86,19 @@
 
     <div class="container">
         <div class="jumbotron">
-            <form action="/demo/send" method="post">
-                <div class="row">
-                    <div class="col">
-                        <h1 class="display-4" style="font-size:2.5rem">Settings</h1>
-                    </div>
-                    {% if is_running -%}
-                        <div class="col text-right">
-                            <button id="activate" class="btn btn-success" {% if activated -%} disabled {% endif -%}>Activate</button>
-                        </div>
-                    {% endif -%}
+            <div class="row">
+                <div class="col">
+                    <h1 class="display-4" style="font-size:2.5rem">Settings</h1>
                 </div>
-                <hr>
                 {% if is_running -%}
+                    <div class="col text-right">
+                        <button id="activate" class="btn btn-success" {% if activated -%} disabled {% endif -%}>Activate</button>
+                    </div>
+                {% endif -%}
+            </div>
+            <hr>
+            {% if is_running -%}
+                {% if activated -%}
                     {% for slider in settings_sliders %}
                         <div class="row pb-2">
                             <div class="col-3">
@@ -128,15 +129,16 @@
                         </div>
                     {% endfor %}
                 {% else -%}
-                    <p id="server_off_message">The Python Script Controller is not running.</p>
+                    <p>You must first enable the mode to modify its settings.</p>
                 {% endif -%}
                 <hr>
-                {% if is_running -%}
                 <div class="text-right">
                     <button type="submit" class="btn btn-primary">Send</button>
                 </div>
-                {% endif -%}
-            </form>
+            {% else -%}
+                <hr>
+                <p id="server_off_message">The Python Script Controller is not running.</p>
+            {% endif -%}
         </div>
     </div>
 {% else -%}

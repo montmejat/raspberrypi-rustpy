@@ -38,6 +38,9 @@ class CommunicationsThread(Thread):
             self.port.write(b'?') # stop message
 
     def sync_leds(self, leds):
+        if self.port == None:
+            return
+
         lock = Lock()
 
         lock.acquire()

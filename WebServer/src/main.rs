@@ -22,7 +22,6 @@ use tokio::net::TcpListener;
 
 struct ServerState {
     logged_in_user: Mutex<Option<String>>,
-    activated_mode: Mutex<String>,
 }
 
 #[derive(Template)]
@@ -45,6 +44,8 @@ struct RainbowTemplate {
     icon_name: String,
     activated: bool,
     is_running: bool,
+    settings_sliders: Vec<helper::script_controller::Slider>,
+    settings_others: Vec<helper::script_controller::Variable>,
 }
 
 #[derive(Template)]
@@ -55,6 +56,8 @@ struct CosmicTemplate {
     icon_name: String,
     activated: bool,
     is_running: bool,
+    settings_sliders: Vec<helper::script_controller::Slider>,
+    settings_others: Vec<helper::script_controller::Variable>,
 }
 
 #[derive(Template)]
@@ -159,11 +162,10 @@ fn demo(mut cookies: Cookies, state: State<ServerState>) -> DemoTemplate {
     let mut settings_sliders = Vec::<helper::script_controller::Slider>::new();
     let mut settings_others = Vec::<helper::script_controller::Variable>::new();
 
-    let mode = &*state.activated_mode.lock().unwrap() == "demo";
+    let socket = helper::script_controller::connect();
+    let mode = helper::script_controller::check_mode(&socket, "demo");
 
     if is_running {
-        let socket = helper::script_controller::connect();
-
         match helper::script_controller::get_settings(&socket) {
             Ok((sliders, others)) => {
                 settings_sliders = sliders;
@@ -227,7 +229,22 @@ fn demo(mut cookies: Cookies, state: State<ServerState>) -> DemoTemplate {
 fn rainbow(mut cookies: Cookies, state: State<ServerState>) -> RainbowTemplate {
     let (_, icon_name) = helper::script_controller::web::get_navbar_info();
     let is_running = helper::script_controller::is_running();
-    let mode = &*state.activated_mode.lock().unwrap() == "rainbow";
+
+    let socket = helper::script_controller::connect();
+    let mode = helper::script_controller::check_mode(&socket, "rainbow");
+
+    let mut settings_sliders = Vec::<helper::script_controller::Slider>::new();
+    let mut settings_others = Vec::<helper::script_controller::Variable>::new();
+
+    if is_running {
+        match helper::script_controller::get_settings(&socket) {
+            Ok((sliders, others)) => {
+                settings_sliders = sliders;
+                settings_others = others;
+            },
+            Err(_) => println!("Error retreiving demo settings of controller...")
+        }
+    }
 
     match cookies.get_private("username") {
         Some(username) => {
@@ -243,6 +260,8 @@ fn rainbow(mut cookies: Cookies, state: State<ServerState>) -> RainbowTemplate {
                                         icon_name: icon_name.to_string(),
                                         activated: mode,
                                         is_running: is_running,
+                                        settings_sliders: settings_sliders,
+                                        settings_others: settings_others,
                                     }
                                 } else {
                                     return RainbowTemplate {
@@ -251,6 +270,8 @@ fn rainbow(mut cookies: Cookies, state: State<ServerState>) -> RainbowTemplate {
                                         icon_name: icon_name.to_string(),
                                         activated: mode,
                                         is_running: is_running,
+                                        settings_sliders: settings_sliders,
+                                        settings_others: settings_others,
                                     }
                                 }
                             },
@@ -270,6 +291,8 @@ fn rainbow(mut cookies: Cookies, state: State<ServerState>) -> RainbowTemplate {
         icon_name: icon_name.to_string(),
         activated: mode,
         is_running: is_running,
+        settings_sliders: settings_sliders,
+        settings_others: settings_others,
     }
 }
 
@@ -277,7 +300,22 @@ fn rainbow(mut cookies: Cookies, state: State<ServerState>) -> RainbowTemplate {
 fn cosmic(mut cookies: Cookies, state: State<ServerState>) -> CosmicTemplate {
     let (_, icon_name) = helper::script_controller::web::get_navbar_info();
     let is_running = helper::script_controller::is_running();
-    let mode = &*state.activated_mode.lock().unwrap() == "cosmic";
+    
+    let socket = helper::script_controller::connect();
+    let mode = helper::script_controller::check_mode(&socket, "cosmic");
+
+    let mut settings_sliders = Vec::<helper::script_controller::Slider>::new();
+    let mut settings_others = Vec::<helper::script_controller::Variable>::new();
+
+    if is_running {
+        match helper::script_controller::get_settings(&socket) {
+            Ok((sliders, others)) => {
+                settings_sliders = sliders;
+                settings_others = others;
+            },
+            Err(_) => println!("Error retreiving demo settings of controller...")
+        }
+    }
 
     match cookies.get_private("username") {
         Some(username) => {
@@ -293,6 +331,8 @@ fn cosmic(mut cookies: Cookies, state: State<ServerState>) -> CosmicTemplate {
                                         icon_name: icon_name.to_string(),
                                         activated: mode,
                                         is_running: is_running,
+                                        settings_sliders: settings_sliders,
+                                        settings_others: settings_others,
                                     }
                                 } else {
                                     return CosmicTemplate {
@@ -301,6 +341,8 @@ fn cosmic(mut cookies: Cookies, state: State<ServerState>) -> CosmicTemplate {
                                         icon_name: icon_name.to_string(),
                                         activated: mode,
                                         is_running: is_running,
+                                        settings_sliders: settings_sliders,
+                                        settings_others: settings_others,
                                     }
                                 }
                             },
@@ -320,6 +362,8 @@ fn cosmic(mut cookies: Cookies, state: State<ServerState>) -> CosmicTemplate {
         icon_name: icon_name.to_string(),
         activated: mode,
         is_running: is_running,
+        settings_sliders: settings_sliders,
+        settings_others: settings_others,
     }
 }
 
@@ -513,7 +557,6 @@ fn rocket() -> rocket::Rocket {
 
     let server_state = ServerState {
         logged_in_user: Mutex::new(None),
-        activated_mode: Mutex::new("demo".to_string()),
     };
 
     rocket::ignite()

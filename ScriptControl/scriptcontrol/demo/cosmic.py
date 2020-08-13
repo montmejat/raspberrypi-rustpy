@@ -1,16 +1,8 @@
 import luminolib, time
 
-class Settings:
-    def __init__(self):
-        self.dimmer = self.SliderValue(0, 40, 100)
+param = luminolib.Settings()
+param.dimmer = luminolib.Settings.SliderValue(0, 40, 100)
 
-    class SliderValue:
-        def __init__(self, min, max, value=0):
-            self.min = min
-            self.max = max
-            self.value = value
-
-param = Settings()
 led_matrix = luminolib.Led(23)
 turned_on_light = 0
 

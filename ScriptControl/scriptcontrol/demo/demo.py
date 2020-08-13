@@ -6,6 +6,11 @@ import rpipy # custom rust written library for python
 import luminolib # python objects for the leds and the settings
 
 param = luminolib.Settings() # settings you want to be able to modify on the webserver
+param.my_var = 50
+param.my_message = "Hello!"
+param.slider_var = luminolib.Settings.SliderValue(0, 100, 50)
+param.another_slider = luminolib.Settings.SliderValue(10, 40, 20)
+
 led_matrix = luminolib.Led(22) # the leds you can control
 turned_on_light = 0
 

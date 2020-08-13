@@ -113,6 +113,32 @@ pub mod script_controller {
         }
     }
 
+    fn get_mode(socket: &Socket) -> Result<String, Error> {
+        let mut data = HashMap::new();
+        data.insert("type", "get");
+        data.insert("value", "mode");
+        send_message_str(&socket, data);
+
+        match socket.recv_bytes(0) {
+            Ok(value) => {
+                let value: String = from_slice(&value).unwrap();
+                Ok(value)
+            },
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn check_mode(socket: &Socket, mode: &str) -> bool {
+        match get_mode(&socket) {
+            Ok(value) => {
+                return mode == value;
+            },
+            Err(_) => {
+                return false;
+            }
+        }
+    }
+
     pub fn get_settings(socket: &Socket) -> Result<(Vec<Slider>, Vec<Variable>), Error> {
         let mut data = HashMap::new();
         data.insert("type", "get");
@@ -355,7 +381,7 @@ pub mod websocket {
                                         "icon_name": icon_name,
                                     }),
                                 });
-                            } else if value == "demo" {
+                            } else if value == "demo" || value == "cosmic" {
                                 let mut settings_sliders = Vec::<helper::script_controller::Slider>::new();
                                 let mut settings_others = Vec::<helper::script_controller::Variable>::new();
 
