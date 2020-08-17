@@ -408,6 +408,39 @@ pub mod websocket {
                                         "others": settings_others,
                                     }),
                                 });
+                            } else if value == "maintenance" {
+                                if is_pyscript_running {
+                                    let socket = helper::script_controller::connect();
+                                    match helper::script_controller::get_leds(&socket) {
+                                        Ok(leds) => {
+                                            data = json!({
+                                                "is_pyscript_running": is_pyscript_running,
+                                                "navbar": json!({
+                                                    "action": action,
+                                                    "icon_name": icon_name,
+                                                }),
+                                                "leds": leds,
+                                            });
+                                        },
+                                        Err(_) => {
+                                            data = json!({
+                                                "is_pyscript_running": is_pyscript_running,
+                                                "navbar": json!({
+                                                    "action": action,
+                                                    "icon_name": icon_name,
+                                                }),
+                                            });
+                                        },
+                                    }
+                                } else {
+                                    data = json!({
+                                        "is_pyscript_running": is_pyscript_running,
+                                        "navbar": json!({
+                                            "action": action,
+                                            "icon_name": icon_name,
+                                        }),
+                                    });
+                                }
                             } else {
                                 data = json!({
                                     "is_pyscript_running": is_pyscript_running,
@@ -473,6 +506,9 @@ pub mod passwords {
 }
 
 pub mod led {
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Serialize, Deserialize)]
     pub struct Led {
         pub name: String,
         pub green: u8,

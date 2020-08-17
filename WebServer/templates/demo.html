@@ -27,10 +27,10 @@
                     location.reload();
                 }
                 
-                {% if activated -%}
+                if (data.variables != undefined) {
                     data.variables.sliders.forEach(update);
                     data.variables.others.forEach(update);
-                {% endif -%}
+                }
             };
 
             document.getElementById("activate").onclick = function() {

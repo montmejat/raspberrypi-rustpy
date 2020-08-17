@@ -27,15 +27,17 @@ class CommunicationsThread(Thread):
         
         if self.port != None:
             self.port.write(b'#') # start message
+            self.port.write(b'&') # tell that its to send data
 
             for i in range(self.leds_count):
                 led = self.leds.get(i)
-                # print(led.green, led.red, led.blue)
                 self.port.write(struct.pack('=B', led.green))
                 self.port.write(struct.pack('=B', led.red))
                 self.port.write(struct.pack('=B', led.blue))
             
             self.port.write(b'?') # stop message
+
+            # TODO: try to flush the port
 
     def sync_leds(self, leds):
         if self.port == None:
@@ -46,6 +48,7 @@ class CommunicationsThread(Thread):
         lock.acquire()
         self.leds = leds
         self.port.write(b'#')
+        self.port.write(b'&') # tell that its to send data
 
         for i in range(self.leds_count):
             led = self.leds.get(i)
@@ -163,6 +166,7 @@ class CommunicationsThread(Thread):
                         leds_modified = leds_modified + ' ]'
 
                         self.port.write(b'#')
+                        self.port.write(b'&') # tell that its to send data
                         for i in range(self.leds_count):
                             led = self.leds.get(i)
                             self.port.write(struct.pack('=B', led.green))
@@ -200,6 +204,13 @@ class CommunicationsThread(Thread):
                                 value = var_type(value)
                                 setattr(mode_library.param, var_name, value)
                     elif 'mode' in data.keys():
+                        if mode == 'rainbow':
+                            self.port.write(b'#') # stop looping
+                        
+                        if data['mode'] == 'rainbow':
+                            self.port.write(b'#')
+                            self.port.write(b'/') # rainbow code mode 
+
                         mode = data['mode']
                         mode_library = __import__(mode)
                         mode_library.start()
@@ -294,4 +305,6 @@ def app_loop(server_socket, print_debug=True, send_debug_to_client=True):
     while True:
         if not pause:
             mode_library.loop()
-            thread.sync_leds(mode_library.led_matrix)
+
+            if mode != 'rainbow':
+                thread.sync_leds(mode_library.led_matrix)

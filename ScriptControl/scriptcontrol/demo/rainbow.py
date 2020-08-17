@@ -1,29 +1,16 @@
-import luminolib
+import luminolib, time
 
 param = luminolib.Settings()
+param.dimmer = luminolib.Settings.SliderValue(0, 100, 40)
+
 led_matrix = luminolib.Led(22)
-turned_on_light = 0
 
 def start():
     print("Starting rainbow mode!")
+    led_matrix.mode = 'rainbow'
 
 def loop():
-    global turned_on_light
-    
-    led = led_matrix.get(turned_on_light)
-    led.green = 5
-    led.red = 5
-    led.blue = 5
-
-    if turned_on_light > 0:
-        led = led_matrix.get(turned_on_light - 1)
-        led.green = 0
-        led.red = 0
-        led.blue = 0
-
-    turned_on_light += 1
-    if turned_on_light > 21:
-        turned_on_light = 0
+    time.sleep(10)
 
 def end():
     print("Ending rainbow mode!")
