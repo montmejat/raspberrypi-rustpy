@@ -23,11 +23,11 @@
                 }
 
                 if (data.leds != undefined) {
-                    // for (index = 0; index < data.leds.length; index++) {
-                    //     document.getElementById(`led_${data.leds.green}_green_old`).innerHTML = data.leds[index].green;
-                    //     document.getElementById(`led_${data.leds.blue}_blue_old`).innerHTML = data.leds[index].blue;
-                    //     document.getElementById(`led_${data.leds.red}_red_old`).innerHTML = data.leds[index].red;
-                    // }
+                    for (index = 0; index < data.leds.length; index++) {
+                        document.getElementById(`led_${data.leds[index].name}_green_old`).innerHTML = data.leds[index].green;
+                        document.getElementById(`led_${data.leds[index].name}_blue_old`).innerHTML = data.leds[index].blue;
+                        document.getElementById(`led_${data.leds[index].name}_red_old`).innerHTML = data.leds[index].red;
+                    }
                 }
             };
 
