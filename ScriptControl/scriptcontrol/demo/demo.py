@@ -11,7 +11,7 @@ param.my_message = "Hello!"
 param.slider_var = luminolib.Settings.SliderValue(0, 100, 50)
 param.another_slider = luminolib.Settings.SliderValue(10, 40, 20)
 
-led_matrix = luminolib.Led(22) # the leds you can control
+led_matrix = luminolib.Led(64) # the leds you can control
 turned_on_light = 0
 
 def start():
@@ -29,11 +29,11 @@ def loop():
     if turned_on_light > 0:
         led = led_matrix.get(turned_on_light - 1)
         led.green = 0
-        led.red = 0
+        led.red = 15
         led.blue = 0
 
     turned_on_light += 1
-    if turned_on_light > 21:
+    if turned_on_light > 63:
         turned_on_light = 0
 
     # sleep(5)

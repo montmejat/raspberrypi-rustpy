@@ -5,7 +5,7 @@ from types import ModuleType
 sys.path.insert(1, '/home/pi/raspberrypi-rustpy/ScriptControl/scriptcontrol/demo/')
 import luminolib
 
-mode = "demo"
+mode = "rainbow"
 mode_library = __import__(mode)
 
 class CommunicationsThread(Thread):
@@ -16,51 +16,43 @@ class CommunicationsThread(Thread):
         self.print_debug = print_debug
         self.send_debug_to_client = send_debug_to_client
         self.hash_key = hashlib.sha256('test'.encode()).hexdigest()
-        self.leds_count = 22
-        self.leds = luminolib.Led(self.leds_count)
+        self.leds = luminolib.Led(64)
 
         try:
-            self.port = serial.Serial("/dev/rfcomm0", baudrate=9600)
+            self.port = serial.Serial("/dev/rfcomm0") # 'ttyS0' for wire connection: you need to activate it first with raspi-config
         except Exception:
             self.port = None
             print("\nBLUETOOTH ERROR! Make sure you connected to the bluetooth device.\nTry using: 'sudo rfcomm connect hci0 hc05_addr'.\n")
-        
-        if self.port != None:
-            self.port.write(b'#') # start message
 
-            for i in range(self.leds_count):
-                led = self.leds.get(i)
-                # print(led.green, led.red, led.blue)
-                self.port.write(struct.pack('=B', led.green))
-                self.port.write(struct.pack('=B', led.red))
-                self.port.write(struct.pack('=B', led.blue))
-            
-            self.port.write(b'?') # stop message
+        self.send_leds()
 
-    def sync_leds(self, leds):
+    def send_leds(self):
         if self.port == None:
+            print("\nBLUETOOTH ERROR! No connection to LEDs, cannot send values.\n")
             return
-
+        
         lock = Lock()
 
         lock.acquire()
-        self.leds = leds
-        self.port.write(b'#')
-
-        for i in range(self.leds_count):
+        mes = b'#' # start message
+        for i in range(self.leds.leds_count):
             led = self.leds.get(i)
-            self.port.write(struct.pack('=B', led.green))
-            self.port.write(struct.pack('=B', led.red))
-            self.port.write(struct.pack('=B', led.blue))
-
-        self.port.write(b'?')
+            mes += struct.pack('=B', led.green)
+            mes += struct.pack('=B', led.red)
+            mes += struct.pack('=B', led.blue)
+        self.port.write(mes + b'?') # stop message
+        self.port.flush()
         lock.release()
+
+    def sync_leds(self, leds):
+        self.leds = leds
+        self.send_leds()
 
     def run(self):
         global pause, mode, mode_library
 
         while True:
-            event_count = self.socket.poll(1000)
+            event_count = self.socket.poll(300)
 
             message = ''
             if event_count != 0:
@@ -131,10 +123,10 @@ class CommunicationsThread(Thread):
                         message = cbor.dumps(variables)
                         self.socket.send(message)
                         continue
-                    elif data['value'] == 'leds':
+                    elif data['value'] == 's':
                         leds_as_dict = []
                         
-                        for i in range(self.leds_count):
+                        for i in range(self.leds.leds_count):
                             leds_as_dict.append({ 'led': str(i), 'green': str(self.leds.get(i).green), 'red': str(self.leds.get(i).red), 'blue': str(self.leds.get(i).blue) })
 
                         message = cbor.dumps(leds_as_dict)
@@ -163,7 +155,8 @@ class CommunicationsThread(Thread):
                         leds_modified = leds_modified + ' ]'
 
                         self.port.write(b'#')
-                        for i in range(self.leds_count):
+                        self.port.write(b'&') # tell that its to send data
+                        for i in range(self.leds.leds_count):
                             led = self.leds.get(i)
                             self.port.write(struct.pack('=B', led.green))
                             self.port.write(struct.pack('=B', led.red))
@@ -200,6 +193,13 @@ class CommunicationsThread(Thread):
                                 value = var_type(value)
                                 setattr(mode_library.param, var_name, value)
                     elif 'mode' in data.keys():
+                        if mode == 'rainbow':
+                            self.port.write(b'#') # stop looping
+                        
+                        if data['mode'] == 'rainbow':
+                            self.port.write(b'#')
+                            self.port.write(b'/') # rainbow code mode 
+
                         mode = data['mode']
                         mode_library = __import__(mode)
                         mode_library.start()

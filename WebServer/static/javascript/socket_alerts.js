@@ -29,7 +29,7 @@ function create_socket_connection(ip, port, request) {
     socket.onmessage = function(event) {
         try {
             data = JSON.parse(event.data);
-            
+
             if (data.navbar.action != "") {
                 document.getElementById('action_link').onclick = function() {
                     send_command(socket, data.navbar.action);

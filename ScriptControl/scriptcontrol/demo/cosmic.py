@@ -1,7 +1,7 @@
 import luminolib, time
 
 param = luminolib.Settings()
-param.dimmer = luminolib.Settings.SliderValue(0, 40, 100)
+param.dimmer = luminolib.Settings.SliderValue(0, 100, 40)
 
 led_matrix = luminolib.Led(23)
 turned_on_light = 0

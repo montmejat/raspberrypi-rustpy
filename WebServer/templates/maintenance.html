@@ -13,17 +13,21 @@
             socket = create_socket_connection("192.168.0.16", "3012", "maintenance");
 
             custom_on_message_call = function(data) {
-                try {
-                    data = JSON.parse(data);
-                    
-                    document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/${data.navbar.icon_name}.svg`;
+                data = JSON.parse(data);
+                
+                document.getElementById("icon_name").src = `bootstrap-icons-1.0.0-alpha4/${data.navbar.icon_name}.svg`;
 
-                    server_paragraph = document.getElementById("server_off_message");
-                    if (data.is_pyscript_running && server_paragraph != undefined) {
-                        location.reload();
+                server_paragraph = document.getElementById("server_off_message");
+                if (data.is_pyscript_running && server_paragraph != undefined) {
+                    location.reload();
+                }
+
+                if (data.leds != undefined) {
+                    for (index = 0; index < data.leds.length; index++) {
+                        document.getElementById(`led_${data.leds[index].name}_green_old`).innerHTML = data.leds[index].green;
+                        document.getElementById(`led_${data.leds[index].name}_blue_old`).innerHTML = data.leds[index].blue;
+                        document.getElementById(`led_${data.leds[index].name}_red_old`).innerHTML = data.leds[index].red;
                     }
-                } catch(e) {
-                    create_alert("primary", "New message", `${data}`);
                 }
             };
 
