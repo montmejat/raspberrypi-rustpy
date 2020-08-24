@@ -1,8 +1,7 @@
 #![no_std]
 #![no_main]
 
-mod led_matrix;
-mod bluetooth;
+mod helper;
 
 // you can put a breakpoint on `rust_begin_unwind` to catch panics
 use panic_halt as _;
@@ -15,7 +14,7 @@ use cortex_m_rt::entry;
 use stm32l4xx_hal::prelude::*;
 use stm32l4xx_hal::serial::{Config, Serial};
 
-use led_matrix::controls::Color::{Blue, White, Cyan};
+use helper::leds::controls::Color::{Blue, White, Cyan};
 
 #[entry]
 fn main() -> ! {
@@ -34,8 +33,8 @@ fn main() -> ! {
     let c1 = gpioa.pa0.into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper).into_af1(&mut gpioa.moder, &mut gpioa.afrl);
     let mut pwm = dp.TIM2.pwm(c1, 800.khz(), clocks, &mut rcc.apb1r1);
     
-    let max = led_matrix::controller::init(&mut pwm);
-    let buffer: [u32; 1586] = led_matrix::controls::create_buffer_from_colors(max, [
+    let max = helper::leds::controller::init(&mut pwm);
+    let buffer: [u32; 1586] = helper::leds::controls::create_buffer_from_colors(max, [
         Blue, Blue, Blue, Blue, Blue, Blue, Blue, Blue,
         Blue, Cyan, White, White, White, White, Cyan, Blue,
         Cyan, Cyan, Cyan, Cyan, Cyan, Cyan, White, Cyan,
@@ -44,8 +43,8 @@ fn main() -> ! {
         Cyan, Cyan, Cyan, Cyan, Cyan, Cyan, Cyan, Cyan,
         Blue, Cyan, Cyan, Cyan, Cyan, Cyan, Cyan, Blue,
         Blue, Blue, Blue, Blue, Blue, Blue, Blue, Blue,
-    ]); // my incredible attemp to recreate the Demcon logo, don't judge me please
-    led_matrix::controller::load_buffer(buffer); 
+    ]); // my attemp to recreate the Demcon logo, don't judge me please
+    helper::leds::controller::load_buffer(buffer); 
 
     // setup status LED
     let mut gpiob = dp.GPIOB.split(&mut rcc.ahb2);
@@ -109,8 +108,8 @@ fn main() -> ! {
             
             led_blue.set_low().unwrap();
 
-            let new_buffer: [u32; 1586] = led_matrix::controls::create_buffer_from_values(max, incoming_buffer);
-            led_matrix::controller::load_buffer(new_buffer);
+            let new_buffer: [u32; 1586] = helper::leds::controls::create_buffer_from_values(max, incoming_buffer);
+            helper::leds::controller::load_buffer(new_buffer);
         }
     }
 }
