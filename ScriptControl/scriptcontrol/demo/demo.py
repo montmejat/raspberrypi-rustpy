@@ -22,14 +22,14 @@ def loop():
     global turned_on_light
 
     led = led_matrix.get(turned_on_light)
-    led.green = 5
-    led.red = 5
-    led.blue = 5
+    led.green = 255
+    led.red = 255
+    led.blue = 255
 
     if turned_on_light > 0:
         led = led_matrix.get(turned_on_light - 1)
         led.green = 0
-        led.red = 15
+        led.red = 255
         led.blue = 0
 
     turned_on_light += 1

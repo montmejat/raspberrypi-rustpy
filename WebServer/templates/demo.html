@@ -11,7 +11,11 @@
 {% if logged_in -%}
     <script>
         function update(item, index) {
-            document.getElementById(item.name).innerHTML = item.value;
+            try {
+                document.getElementById(item.name).innerHTML = item.value;
+            } catch(e) {
+                // do nothing
+            }
         }
 
         $(document).ready(function() {

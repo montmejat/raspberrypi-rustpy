@@ -1,7 +1,7 @@
 import luminolib, time
 
 param = luminolib.Settings()
-param.ms_sleep = luminolib.Settings.SliderValue(0, 1000, 0)
+param.ms_sleep = luminolib.Settings.SliderValue(0, 1000, 1000)
 
 led_matrix = luminolib.Led(22)
 hsv_lights = [ 0, 4, 8, 13, 17, 21, 25, 30, 34, 38, 42, 47, 51, 55, 59, 64, 68, 72, 76,
@@ -55,7 +55,7 @@ def loop():
     if angle > 359:
         angle = 0
     
-    time.sleep(ms_sleep / 1000)
+    time.sleep(param.ms_sleep.value / 1000)
 
 def end():
     print("Ending rainbow mode!")

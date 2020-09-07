@@ -123,7 +123,7 @@ class CommunicationsThread(Thread):
                         message = cbor.dumps(variables)
                         self.socket.send(message)
                         continue
-                    elif data['value'] == 's':
+                    elif data['value'] == 'leds':
                         leds_as_dict = []
                         
                         for i in range(self.leds.leds_count):
@@ -185,9 +185,9 @@ class CommunicationsThread(Thread):
                                 message = '      Cannot modify' + var_name + 'to' + value, 'of the type' + data['cast']
                         else:
                             var_type = type(getattr(mode_library.param, var_name))
-                            if var_type == mode_library.Settings.SliderValue:
+                            if var_type == luminolib.Settings.SliderValue:
                                 slider = getattr(mode_library.param, var_name)
-                                slider.value = value
+                                slider.value = int(value)
                                 setattr(mode_library.param, var_name, slider)
                             else:
                                 value = var_type(value)

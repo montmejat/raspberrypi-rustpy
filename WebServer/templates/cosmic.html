@@ -11,7 +11,11 @@
 {% if logged_in -%}
     <script>
         function update(item, index) {
-            document.getElementById(item.name).innerHTML = item.value;
+            try {
+                document.getElementById(item.name).innerHTML = item.value;
+            } catch(e) {
+                // do nothing
+            }
         }
 
         $(document).ready(function() {
@@ -38,6 +42,13 @@
                 document.getElementById("activate").disabled = true;
                 location.reload();
             };
+
+            document.getElementById("send_button").onclick = function() {
+                ms_sleep = document.getElementById("ms_sleep").value;
+                document.getElementById('var_ms_sleep').innerHTML = ms_sleep
+                data = { "command": "set_value", "var": "ms_sleep", "value": ms_sleep };
+                socket.send(JSON.stringify(data));
+            }
         });
     </script>
 
@@ -133,7 +144,7 @@
                 {% endif -%}
                 <hr>
                 <div class="text-right">
-                    <button type="submit" class="btn btn-primary">Send</button>
+                    <button id="send_button" class="btn btn-primary">Send</button>
                 </div>
             {% else -%}
                 <hr>

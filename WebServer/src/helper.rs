@@ -340,6 +340,16 @@ pub mod websocket {
                                             data.insert("mode", value["mode"].as_str().unwrap());
 
                                             helper::script_controller::send_message_str(&socket, data);
+                                        },
+                                        "\"set_value\"" => {
+                                            let socket = helper::script_controller::connect();
+
+                                            let mut data: HashMap<&str, &str> = HashMap::new();
+                                            data.insert("type", "set");
+                                            data.insert("value", value["value"].as_str().unwrap());
+                                            data.insert("var", value["var"].as_str().unwrap());
+
+                                            helper::script_controller::send_message_str(&socket, data);
                                         }
                                         _ => {}
                                     }
